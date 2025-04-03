@@ -174,7 +174,7 @@ public class GameManager : MonoBehaviourSingleton<GameManager> {
 	/// </summary>
 	/// <param name="move">The move to execute.</param>
 	/// <returns>True if the move was successfully executed; otherwise, false.</returns>
-	private bool TryExecuteMove(Movement move) {
+	public bool TryExecuteMove(Movement move) {
 		// Attempt to execute the move within the game logic.
 		if (!game.TryExecuteMove(move)) {
 			return false;

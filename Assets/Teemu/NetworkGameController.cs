@@ -26,7 +26,7 @@ public class NetworkGameController : NetworkBehaviour
     }
 
     [ServerRpc(RequireOwnership = false)]
-    public void RequestMoveServerRpc(Square start, Square end, ulong clientId)
+    public void RequestMoveServerRpc(ForceNetworkSerializeByMemcpy<NetworkSquare> start, ForceNetworkSerializeByMemcpy<NetworkSquare> end, ulong clientId)
     {
         if (!isGameActive.Value) return;
 
@@ -37,7 +37,10 @@ public class NetworkGameController : NetworkBehaviour
             return;
         }
 
-        Movement move = new Movement(start, end, GameManager.Instance.CurrentBoard);
+        Square startSquare = start.Value.ToSquare();
+        Square endSquare = end.Value.ToSquare();
+
+        Movement move = new Movement(startSquare, endSquare);
         if (GameManager.Instance.TryExecuteMove(move))
         {
             currentTurn.Value = currentTurn.Value == Side.White ? Side.Black : Side.White;

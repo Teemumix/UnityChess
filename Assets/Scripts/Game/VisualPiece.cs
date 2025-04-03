@@ -2,6 +2,7 @@
 using UnityChess;
 using UnityEngine;
 using static UnityChess.SquareUtil;
+using Unity.Netcode;
 
 /// <summary>
 /// Represents a visual chess piece in the game. This component handles user interaction,
@@ -79,45 +80,52 @@ public class VisualPiece : MonoBehaviour {
 	/// Determines the closest board square to the piece and raises an event with the move.
 	/// </summary>
 	public void OnMouseUp() {
-		if (enabled && NetworkGameController.Instance.IsMyTurn(NetworkManager.Singleton.LocalClientId)) {
-			// Clear any previous potential landing square candidates.
-			potentialLandingSquares.Clear();
-			// Obtain all square GameObjects within the collision radius of the piece's current position.
-			BoardManager.Instance.GetSquareGOsWithinRadius(potentialLandingSquares, thisTransform.position, SquareCollisionRadius);
+		if (enabled) {
+			if (NetworkGameController.Instance != null & NetworkGameController.Instance.IsMyTurn(NetworkManager.Singleton.LocalClientId))
+			{
+				// Clear any previous potential landing square candidates.
+				potentialLandingSquares.Clear();
+				// Obtain all square GameObjects within the collision radius of the piece's current position.
+				BoardManager.Instance.GetSquareGOsWithinRadius(potentialLandingSquares, thisTransform.position, SquareCollisionRadius);
 
-			// If no squares are found, assume the piece was moved off the board and reset its position.
-			if (potentialLandingSquares.Count == 0) { // piece moved off board
-				thisTransform.position = thisTransform.parent.position;
-				return;
-			}
-	
-			// Determine the closest square from the list of potential landing squares.
-			Transform closestSquareTransform = potentialLandingSquares[0].transform;
-			// Calculate the square of the distance between the piece and the first candidate square.
-			float shortestDistanceFromPieceSquared = (closestSquareTransform.position - thisTransform.position).sqrMagnitude;
-			
-			// Iterate through remaining potential squares to find the closest one.
-			for (int i = 1; i < potentialLandingSquares.Count; i++) {
-				GameObject potentialLandingSquare = potentialLandingSquares[i];
-				// Calculate the squared distance from the piece to the candidate square.
-				float distanceFromPieceSquared = (potentialLandingSquare.transform.position - thisTransform.position).sqrMagnitude;
-
-				// If the current candidate is closer than the previous closest, update the closest square.
-				if (distanceFromPieceSquared < shortestDistanceFromPieceSquared) {
-					shortestDistanceFromPieceSquared = distanceFromPieceSquared;
-					closestSquareTransform = potentialLandingSquare.transform;
+				// If no squares are found, assume the piece was moved off the board and reset its position.
+				if (potentialLandingSquares.Count == 0) { // piece moved off board
+					thisTransform.position = thisTransform.parent.position;
+					return;
 				}
+		
+				// Determine the closest square from the list of potential landing squares.
+				Transform closestSquareTransform = potentialLandingSquares[0].transform;
+				// Calculate the square of the distance between the piece and the first candidate square.
+				float shortestDistanceFromPieceSquared = (closestSquareTransform.position - thisTransform.position).sqrMagnitude;
+				
+				// Iterate through remaining potential squares to find the closest one.
+				for (int i = 1; i < potentialLandingSquares.Count; i++) {
+					GameObject potentialLandingSquare = potentialLandingSquares[i];
+					// Calculate the squared distance from the piece to the candidate square.
+					float distanceFromPieceSquared = (potentialLandingSquare.transform.position - thisTransform.position).sqrMagnitude;
+
+					// If the current candidate is closer than the previous closest, update the closest square.
+					if (distanceFromPieceSquared < shortestDistanceFromPieceSquared) {
+						shortestDistanceFromPieceSquared = distanceFromPieceSquared;
+						closestSquareTransform = potentialLandingSquare.transform;
+					}
+				}
+
+				// Raise the VisualPieceMoved event with the initial square, the piece's transform, and the closest square transform.
+				VisualPieceMoved?.Invoke(CurrentSquare, thisTransform, closestSquareTransform);
+
+				
+
+				ForceNetworkSerializeByMemcpy<NetworkSquare> startSquare = new ForceNetworkSerializeByMemcpy<NetworkSquare>(new NetworkSquare(CurrentSquare));
+				ForceNetworkSerializeByMemcpy<NetworkSquare> endSquare = new ForceNetworkSerializeByMemcpy<NetworkSquare>(new NetworkSquare(StringToSquare(closestSquareTransform.name)));
+
+				NetworkGameController.Instance.RequestMoveServerRpc(startSquare, endSquare, NetworkManager.Singleton.LocalClientId);
+			} 
+			else 
+			{
+				thisTransform.position = thisTransform.parent.position;
 			}
-
-			// Raise the VisualPieceMoved event with the initial square, the piece's transform, and the closest square transform.
-			VisualPieceMoved?.Invoke(CurrentSquare, thisTransform, closestSquareTransform);
-
-
-			NetworkGameController.Instance.RequestMoveServerRpc(CurrentSquare, new Square(closestSquareTransform.name), NetworkManager.Singleton.LocalClientId);
-		} 
-		else 
-		{
-			thisTransform.position = thisTransform.parent.position;
 		}
 	}
 }
