@@ -48,6 +48,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ipAddress: 127.0.0.1
   port: 7777
+  chessPieces: {fileID: 11400000, guid: 42e9045ca5457ed4faf55a4d260b71c0, type: 2}
 --- !u!114 &1042041523570502355
 MonoBehaviour:
   m_ObjectHideFlags: 0

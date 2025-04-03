@@ -1,6 +1,8 @@
 using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
 using UnityEngine;
+using UnityEngine.SceneManagement;
+using System.Collections.Generic;
 
 public class ChessNetworkManager : NetworkBehaviour
 {
@@ -27,13 +29,14 @@ public class ChessNetworkManager : NetworkBehaviour
     [SerializeField] private ushort port = 7777;
     private UnityTransport transport;
 
-
     public bool IsGameStarted => isGameStarted.Value;
     public bool IsWhitePlayer => isWhitePlayer;
     public bool IsGameOver => isGameOver.Value;
     public string GameResult => gameResult.Value;
     public int CurrentPlayerTurn => currentPlayerTurn.Value;
     public float AverageLatency => averageLatency.Value;
+
+    [SerializeField] private NetworkPrefabsList chessPieces;
 
     private void Awake()
     {
@@ -57,6 +60,16 @@ public class ChessNetworkManager : NetworkBehaviour
     private void Start()
     {
         transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
+
+        if (chessPieces == null)
+        {
+            chessPieces = Resources.Load<NetworkPrefabsList>("Teemu/ChessPiecesPrefabList");
+
+            Debug.LogError("Failed to load NetworkPrefabsList!");
+            return;
+        }
+        RegisterNetworkPrefabs();
+        ConfigureSceneManager();
     }
 
     public void SetIPAddress(string ip)
@@ -276,5 +289,55 @@ public class ChessNetworkManager : NetworkBehaviour
         gameResult.Value = isWhitePlayer ? "Black wins by resignation" : "White wins by resignation";
         isGameOver.Value = true;
         EndGameClientRpc();
+    }
+
+    private void ConfigureSceneManager()
+    {
+        // Correct way to disable validation warnings in Netcode 1.5.2
+        NetworkManager.Singleton.SceneManager.DisableValidationWarnings(true);
+        
+        // Set client synchronization mode
+        NetworkManager.Singleton.SceneManager.SetClientSynchronizationMode(LoadSceneMode.Additive);
+        
+        // Optional verification override
+        NetworkManager.Singleton.SceneManager.VerifySceneBeforeLoading = (scene, scenesLoaded, sceneEventProgress) => true;
+    }
+
+    private void RegisterNetworkPrefabs()
+    {
+        // Create new NetworkPrefabs instance
+        var newPrefabs = new NetworkPrefabs();
+        
+        // Track registered prefab names to prevent duplicates
+        var registeredPrefabs = new HashSet<string>();
+
+        foreach (var networkPrefab in chessPieces.PrefabList)
+        {
+            if (networkPrefab.Prefab == null)
+            {
+                Debug.LogWarning("Null prefab in NetworkPrefabsList");
+                continue;
+            }
+
+            var networkObject = networkPrefab.Prefab.GetComponent<NetworkObject>();
+            if (networkObject == null)
+            {
+                Debug.LogWarning($"Prefab {networkPrefab.Prefab.name} missing NetworkObject");
+                continue;
+            }
+
+            // Check for duplicate prefab names
+            if (registeredPrefabs.Contains(networkPrefab.Prefab.name))
+            {
+                Debug.LogWarning($"Duplicate prefab name detected: {networkPrefab.Prefab.name}");
+                continue;
+            }
+
+            newPrefabs.Add(networkPrefab);
+            registeredPrefabs.Add(networkPrefab.Prefab.name);
+            Debug.Log($"Registered prefab: {networkPrefab.Prefab.name}");
+        }
+
+        NetworkManager.Singleton.NetworkConfig.Prefabs = newPrefabs;
     }
 }

@@ -79,7 +79,7 @@ public class VisualPiece : MonoBehaviour {
 	/// Determines the closest board square to the piece and raises an event with the move.
 	/// </summary>
 	public void OnMouseUp() {
-		if (enabled) {
+		if (enabled && NetworkGameController.Instance.IsMyTurn(NetworkManager.Singleton.LocalClientId)) {
 			// Clear any previous potential landing square candidates.
 			potentialLandingSquares.Clear();
 			// Obtain all square GameObjects within the collision radius of the piece's current position.
@@ -111,6 +111,13 @@ public class VisualPiece : MonoBehaviour {
 
 			// Raise the VisualPieceMoved event with the initial square, the piece's transform, and the closest square transform.
 			VisualPieceMoved?.Invoke(CurrentSquare, thisTransform, closestSquareTransform);
+
+
+			NetworkGameController.Instance.RequestMoveServerRpc(CurrentSquare, new Square(closestSquareTransform.name), NetworkManager.Singleton.LocalClientId);
+		} 
+		else 
+		{
+			thisTransform.position = thisTransform.parent.position;
 		}
 	}
 }
