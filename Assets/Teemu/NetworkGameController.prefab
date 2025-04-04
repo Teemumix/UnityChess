@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &691740370801813311
+--- !u!1 &237935946230465005
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -8,54 +8,52 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 8347623558325009925}
-  - component: {fileID: 6687695904123195783}
-  - component: {fileID: 1042041523570502355}
-  - component: {fileID: 6589001466028201248}
+  - component: {fileID: 1205700744856081664}
+  - component: {fileID: 7558851311437897168}
+  - component: {fileID: 3698734186302745440}
   m_Layer: 0
-  m_Name: ChessNetworkManager
+  m_Name: NetworkGameController
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &8347623558325009925
+--- !u!4 &1205700744856081664
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 691740370801813311}
+  m_GameObject: {fileID: 237935946230465005}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 532.4944, y: 247.3731, z: 417.05084}
+  m_LocalPosition: {x: 732.1948, y: 283.2041, z: 378.57672}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 6
+  m_RootOrder: 8
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &6687695904123195783
+--- !u!114 &7558851311437897168
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 691740370801813311}
+  m_GameObject: {fileID: 237935946230465005}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 49ccf9283805d1f4faffcc2002148f72, type: 3}
+  m_Script: {fileID: 11500000, guid: a81756121c63896419edfd3138c9e5dc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ipAddress: 127.0.0.1
-  port: 7777
-  chessPieces: {fileID: 11400000, guid: 42e9045ca5457ed4faf55a4d260b71c0, type: 2}
---- !u!114 &1042041523570502355
+  lastPingTime: 0
+  latencyText: {fileID: 0}
+--- !u!114 &3698734186302745440
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 691740370801813311}
+  m_GameObject: {fileID: 237935946230465005}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
@@ -69,21 +67,3 @@ MonoBehaviour:
   SpawnWithObservers: 1
   DontDestroyWithOwner: 0
   AutoObjectParentSync: 1
---- !u!114 &6589001466028201248
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 691740370801813311}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 27f21d30bf9c92c4f9c7d43ac0b94ed5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  hostButton: {fileID: 0}
-  joinButton: {fileID: 0}
-  ipInput: {fileID: 0}
-  statusText: {fileID: 0}
-  turnIndicator: {fileID: 0}
-  latencyText: {fileID: 0}

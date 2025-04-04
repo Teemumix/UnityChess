@@ -1,6 +1,7 @@
 using Unity.Netcode;
 using UnityChess;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class NetworkGameController : NetworkBehaviour
 {
@@ -8,6 +9,10 @@ public class NetworkGameController : NetworkBehaviour
 
     private NetworkVariable<Side> currentTurn = new NetworkVariable<Side>(Side.White);
     private NetworkVariable<bool> isGameActive = new NetworkVariable<bool>(false);
+    public float lastPingTime;
+
+    [SerializeField]
+    public Text latencyText = null;
 
     public override void OnNetworkSpawn()
     {
@@ -16,11 +21,10 @@ public class NetworkGameController : NetworkBehaviour
         {
             isGameActive.Value = true;
             GameManager.Instance.StartNewGame();
-            SyncBoardClientRpc(); // Initial sync
+            SyncBoardClientRpc();
         }
         else
         {
-            // Clear client-side pieces on spawn to avoid duplicates
             BoardManager.Instance.ClearBoard();
         }
     }
@@ -95,19 +99,42 @@ public class NetworkGameController : NetworkBehaviour
             if (pieceGO != null)
             {
                 NetworkObject netObj = pieceGO.GetComponent<NetworkObject>();
-                if (netObj != null)
-                {
-                    Destroy(netObj);
-                }
+                if (netObj != null) Destroy(netObj);
             }
         }
 
         BoardManager.Instance.EnsureOnlyPiecesOfSideAreEnabled(GameManager.Instance.SideToMove);
     }
 
+    [ServerRpc(RequireOwnership = false)]
+    public void PingServerRpc(ulong clientId, float clientTime)
+    {
+        PongClientRpc(clientId, Time.time);
+    }
+
+    [ClientRpc]
+    private void PongClientRpc(ulong clientId, float serverTime)
+    {
+        if(clientId == NetworkManager.Singleton.LocalClientId)
+        {
+            float latency = (Time.time - lastPingTime) * 1000;
+            Debug.Log($"Ping: {latency} ms");
+            if (latencyText != null) latencyText.text = $"Ping: {latency} ms";
+        }
+    }
+
     public bool IsMyTurn(ulong clientId)
     {
         Side playerSide = clientId == NetworkManager.ServerClientId ? Side.White : Side.Black;
         return playerSide == currentTurn.Value && isGameActive.Value;
+    }
+
+    private void Update()
+    {
+        if (IsClient && Time.time - lastPingTime > 1f)
+        {
+            lastPingTime = Time.time;
+            PingServerRpc(NetworkManager.Singleton.LocalClientId, lastPingTime);
+        }
     }
 }

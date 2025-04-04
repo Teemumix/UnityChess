@@ -722,71 +722,18 @@ Light:
   m_UseViewFrustumForShadowCasterCull: 1
   m_ShadowRadius: 2
   m_ShadowAngle: 30
---- !u!1 &1210035415
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1210035417}
-  - component: {fileID: 1210035416}
-  - component: {fileID: 1210035418}
-  m_Layer: 0
-  m_Name: NetworkGameController
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1210035416
+--- !u!114 &1082413843 stripped
 MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
+  m_CorrespondingSourceObject: {fileID: 6037039943450033630, guid: 1bed103cb8b7ada4fbc0aae4c7794960,
+    type: 3}
+  m_PrefabInstance: {fileID: 72894089}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1210035415}
+  m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a81756121c63896419edfd3138c9e5dc, type: 3}
+  m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!4 &1210035417
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1210035415}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 732.1948, y: 283.2041, z: 378.57672}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_RootOrder: 8
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1210035418
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1210035415}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 1032846995
-  AlwaysReplicateAsRoot: 0
-  SynchronizeTransform: 1
-  ActiveSceneSynchronization: 0
-  SceneMigrationSynchronization: 1
-  SpawnWithObservers: 1
-  DontDestroyWithOwner: 0
-  AutoObjectParentSync: 1
 --- !u!1 &1382098137
 GameObject:
   m_ObjectHideFlags: 0
@@ -1212,6 +1159,89 @@ RectTransform:
     type: 3}
   m_PrefabInstance: {fileID: 7463109366908870894}
   m_PrefabAsset: {fileID: 0}
+--- !u!1001 &3308314647683217935
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 237935946230465005, guid: 192672807c59dfe44aea04ecffbb92e8,
+        type: 3}
+      propertyPath: m_Name
+      value: NetworkGameController
+      objectReference: {fileID: 0}
+    - target: {fileID: 1205700744856081664, guid: 192672807c59dfe44aea04ecffbb92e8,
+        type: 3}
+      propertyPath: m_RootOrder
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 1205700744856081664, guid: 192672807c59dfe44aea04ecffbb92e8,
+        type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 732.1948
+      objectReference: {fileID: 0}
+    - target: {fileID: 1205700744856081664, guid: 192672807c59dfe44aea04ecffbb92e8,
+        type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 283.2041
+      objectReference: {fileID: 0}
+    - target: {fileID: 1205700744856081664, guid: 192672807c59dfe44aea04ecffbb92e8,
+        type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 378.57672
+      objectReference: {fileID: 0}
+    - target: {fileID: 1205700744856081664, guid: 192672807c59dfe44aea04ecffbb92e8,
+        type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1205700744856081664, guid: 192672807c59dfe44aea04ecffbb92e8,
+        type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1205700744856081664, guid: 192672807c59dfe44aea04ecffbb92e8,
+        type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1205700744856081664, guid: 192672807c59dfe44aea04ecffbb92e8,
+        type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1205700744856081664, guid: 192672807c59dfe44aea04ecffbb92e8,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1205700744856081664, guid: 192672807c59dfe44aea04ecffbb92e8,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1205700744856081664, guid: 192672807c59dfe44aea04ecffbb92e8,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3698734186302745440, guid: 192672807c59dfe44aea04ecffbb92e8,
+        type: 3}
+      propertyPath: GlobalObjectIdHash
+      value: 3523446706
+      objectReference: {fileID: 0}
+    - target: {fileID: 7558851311437897168, guid: 192672807c59dfe44aea04ecffbb92e8,
+        type: 3}
+      propertyPath: latencyText
+      value: 
+      objectReference: {fileID: 1082413843}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 192672807c59dfe44aea04ecffbb92e8, type: 3}
 --- !u!1001 &7463109366908870894
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2983,7 +3013,7 @@ PrefabInstance:
     - target: {fileID: 6810705476634634377, guid: caf93e4ddc2f0544cbddf4e2facb7fd7,
         type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -0.000061035156
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6823757786411297794, guid: caf93e4ddc2f0544cbddf4e2facb7fd7,
         type: 3}
