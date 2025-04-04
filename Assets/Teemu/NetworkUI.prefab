@@ -260,6 +260,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c80a709d04317a146b4b3776812689d2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  networkGameControllerPrefab: {fileID: 237935946230465005, guid: 192672807c59dfe44aea04ecffbb92e8,
+    type: 3}
 --- !u!1 &3531844805670236033
 GameObject:
   m_ObjectHideFlags: 0

@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1205700744856081664}
   - component: {fileID: 7558851311437897168}
-  - component: {fileID: 3698734186302745440}
+  - component: {fileID: -9025989664673838394}
   m_Layer: 0
   m_Name: NetworkGameController
   m_TagString: Untagged
@@ -47,7 +47,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   lastPingTime: 0
   latencyText: {fileID: 0}
---- !u!114 &3698734186302745440
+--- !u!114 &-9025989664673838394
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
