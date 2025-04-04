@@ -538,7 +538,8 @@ PrefabInstance:
       value: NetworkUI
       objectReference: {fileID: 0}
     m_RemovedComponents: []
-    m_RemovedGameObjects: []
+    m_RemovedGameObjects:
+    - {fileID: 100116073207637902, guid: 1bed103cb8b7ada4fbc0aae4c7794960, type: 3}
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 1bed103cb8b7ada4fbc0aae4c7794960, type: 3}
