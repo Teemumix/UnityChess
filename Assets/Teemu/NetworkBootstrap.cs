@@ -5,15 +5,17 @@ using Unity.Netcode;
 
 public class NetworkBootstrap : MonoBehaviour
 {
-    public void StartHost(){
-        NetworkManager.Singleton.StartHost();
-        Debug.Log("Host started");
-    }
+public void StartHost()
+{
+    bool success = NetworkManager.Singleton.StartHost();
+    Debug.Log($"Host started: {success}");
+}
 
-    public void StartClient(){
-        NetworkManager.Singleton.StartClient();
-        Debug.Log("Client started");
-    }
+public void StartClient()
+{
+    bool success = NetworkManager.Singleton.StartClient();
+    Debug.Log($"Client started: {success}");
+}
 
     public void Resign(){
         if (NetworkGameController.Instance != null)

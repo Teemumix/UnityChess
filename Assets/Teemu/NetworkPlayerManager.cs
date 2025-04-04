@@ -7,8 +7,14 @@ public class NetworkPlayerManager : NetworkBehaviour
 {
     private NetworkVariable<int> playerCount = new NetworkVariable<int>(0);
 
+    void Start()
+    {
+        if (!IsSpawned) Debug.LogWarning("NetworkPlayerManager not spawned yet!");
+    }
+
     public override void OnNetworkSpawn()
     {
+        Debug.Log($"NetworkPlayerManager spawned. IsServer: {IsServer}");
         if (IsServer)
         {
             NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
@@ -22,10 +28,14 @@ public class NetworkPlayerManager : NetworkBehaviour
         Debug.Log($"Client {clientId} connected. Total players: {playerCount.Value}");
         if (playerCount.Value > 2)
         {
-            NetworkManager.Singleton.DisconnectClient(clientId); // Limit to 2 players
+            NetworkManager.Singleton.DisconnectClient(clientId);
             Debug.Log("Connection rejected: Max players reached.");
         }
-    }
+        else
+        {
+            Debug.Log($"Successfully connected client {clientId}");
+        }
+}
 
     private void OnClientDisconnected(ulong clientId)
     {

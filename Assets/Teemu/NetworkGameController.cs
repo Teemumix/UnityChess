@@ -14,14 +14,23 @@ public class NetworkGameController : NetworkBehaviour
     [SerializeField]
     public Text latencyText = null;
 
+    [ClientRpc]
+    public void TestConnectionClientRpc()
+    {
+        Debug.Log("Client received test RPC!");
+    }
+
     public override void OnNetworkSpawn()
     {
         Instance = this;
+        Debug.Log($"NetworkGameController spawned. IsServer: {IsServer}, IsClient: {IsClient}, NetworkObject.IsSpawned: {NetworkObject.IsSpawned}");
         if (IsServer)
         {
             isGameActive.Value = true;
             GameManager.Instance.StartNewGame();
             SyncBoardClientRpc();
+            TestConnectionClientRpc();
+            Debug.Log("Server sent TestConnectionClientRpc");
         }
         else
         {
