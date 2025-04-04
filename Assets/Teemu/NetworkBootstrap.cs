@@ -14,4 +14,11 @@ public class NetworkBootstrap : MonoBehaviour
         NetworkManager.Singleton.StartClient();
         Debug.Log("Client started");
     }
+
+    public void Resign(){
+        if (NetworkGameController.Instance != null)
+        {
+            NetworkGameController.Instance.ResignServerRpc(NetworkManager.Singleton.LocalClientId);
+        }
+    }
 }

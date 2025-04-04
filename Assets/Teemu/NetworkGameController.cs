@@ -50,7 +50,36 @@ public class NetworkGameController : NetworkBehaviour
         {
             currentTurn.Value = currentTurn.Value == Side.White ? Side.Black : Side.White;
             SyncBoardClientRpc();
+
+            if (GameManager.Instance.HalfMoveTimeline.TryGetCurrent(out HalfMove latestHalfMove))
+            {
+                if (latestHalfMove.CausedCheckmate || latestHalfMove.CausedStalemate)
+                {
+                    isGameActive.Value = false;
+                    Side winner = latestHalfMove.CausedCheckmate ? currentTurn.Value.Complement() : Side.None;
+                    EndGameClientRpc(winner);
+                }
+            }
         }
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    public void ResignServerRpc(ulong clientId)
+    {
+        if (!isGameActive.Value) return;
+
+        isGameActive.Value = false;
+        Side winner = clientId == NetworkManager.ServerClientId ? Side.Black : Side.White;
+        EndGameClientRpc(winner);
+    }
+
+    [ClientRpc]
+    private void EndGameClientRpc(Side winner)
+    {
+        string resultText = winner == Side.None ? "Stalemate!" : $"{winner} wins!";
+        UIManager.Instance.resultText.text = resultText;
+        UIManager.Instance.resultText.gameObject.SetActive(true);
+        BoardManager.Instance.SetActiveAllPieces(false);
     }
 
     [ClientRpc]
