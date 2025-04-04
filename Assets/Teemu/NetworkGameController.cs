@@ -12,11 +12,16 @@ public class NetworkGameController : NetworkBehaviour
     public override void OnNetworkSpawn()
     {
         Instance = this;
-
         if (IsServer)
         {
             isGameActive.Value = true;
             GameManager.Instance.StartNewGame();
+            SyncBoardClientRpc(); // Initial sync
+        }
+        else
+        {
+            // Clear client-side pieces on spawn to avoid duplicates
+            BoardManager.Instance.ClearBoard();
         }
     }
 
@@ -51,7 +56,24 @@ public class NetworkGameController : NetworkBehaviour
     [ClientRpc]
     private void SyncBoardClientRpc()
     {
-        GameManager.Instance.ResetGameToHalfMoveIndex(GameManager.Instance.LatestHalfMoveIndex);
+        BoardManager.Instance.ClearBoard();
+
+        foreach ((Square square, Piece piece) in GameManager.Instance.CurrentPieces)
+        {
+            BoardManager.Instance.CreateAndPlacePieceGO(piece, square);
+
+            GameObject pieceGO = BoardManager.Instance.GetPieceGOAtPosition(square);
+            if (pieceGO != null)
+            {
+                NetworkObject netObj = pieceGO.GetComponent<NetworkObject>();
+                if (netObj != null)
+                {
+                    Destroy(netObj);
+                }
+            }
+        }
+
+        BoardManager.Instance.EnsureOnlyPiecesOfSideAreEnabled(GameManager.Instance.SideToMove);
     }
 
     public bool IsMyTurn(ulong clientId)
