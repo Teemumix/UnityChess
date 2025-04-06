@@ -15,6 +15,8 @@ public class NetworkGameController : NetworkBehaviour
     [SerializeField]
     public Text latencyText = null;
 
+    public Side CurrentTurn => currentTurn.Value;
+
     [ClientRpc]
     public void TestConnectionClientRpc()
     {
@@ -25,11 +27,16 @@ public class NetworkGameController : NetworkBehaviour
     {
         Instance = this;
         Debug.Log($"NetworkGameController spawned. IsServer: {IsServer}, IsClient: {IsClient}, NetworkObject.IsSpawned: {NetworkObject.IsSpawned}");
+        currentTurn.OnValueChanged += (oldValue, newValue) =>
+        {
+            Debug.Log($"currentTurn changed from {oldValue} to {newValue} on ClientId {NetworkManager.Singleton.LocalClientId}");
+            BoardManager.Instance.EnsureOnlyPiecesOfSideAreEnabled(newValue);
+        };
         if (IsServer)
         {
             isGameActive.Value = true;
             GameManager.Instance.StartNewGame();
-            SyncBoardClientRpc();
+            SyncBoardClientRpc(GameManager.Instance.SerializeGame());
         }
         else
         {
@@ -45,9 +52,14 @@ public class NetworkGameController : NetworkBehaviour
     [ServerRpc(RequireOwnership = false)]
     public void RequestMoveServerRpc(ForceNetworkSerializeByMemcpy<NetworkSquare> start, ForceNetworkSerializeByMemcpy<NetworkSquare> end, ulong clientId)
     {
-        if (!isGameActive.Value) return;
+        if (!isGameActive.Value)
+        {
+            Debug.Log("Game is not active!");
+            return;
+        }
 
         Side playerSide = clientId == NetworkManager.ServerClientId ? Side.White : Side.Black;
+        Debug.Log($"RequestMoveServerRpc: ClientId {clientId}, PlayerSide {playerSide}, CurrentTurn {currentTurn.Value}");
         if (playerSide != currentTurn.Value)
         {
             Debug.Log("Not your turn!");
@@ -56,12 +68,17 @@ public class NetworkGameController : NetworkBehaviour
 
         Square startSquare = start.Value.ToSquare();
         Square endSquare = end.Value.ToSquare();
+        Debug.Log($"Attempting move from {startSquare.File},{startSquare.Rank} to {endSquare.File},{endSquare.Rank}");
 
         Movement move = new Movement(startSquare, endSquare);
-        if (GameManager.Instance.TryExecuteMove(move))
+        bool moveSuccess = GameManager.Instance.TryExecuteMove(move);
+        Debug.Log($"TryExecuteMove result: {moveSuccess}");
+        if (moveSuccess)
         {
-            currentTurn.Value = currentTurn.Value == Side.White ? Side.Black : Side.White;
-            SyncBoardClientRpc();
+            Side newTurn = currentTurn.Value == Side.White ? Side.Black : Side.White;
+            currentTurn.Value = newTurn;
+            Debug.Log($"Turn switched to {currentTurn.Value}");
+            SyncBoardClientRpc(GameManager.Instance.SerializeGame());
 
             if (GameManager.Instance.HalfMoveTimeline.TryGetCurrent(out HalfMove latestHalfMove))
             {
@@ -72,6 +89,10 @@ public class NetworkGameController : NetworkBehaviour
                     EndGameClientRpc(winner);
                 }
             }
+        }
+        else
+        {
+            Debug.Log("Move failed: TryExecuteMove returned false.");
         }
     }
 
@@ -95,14 +116,19 @@ public class NetworkGameController : NetworkBehaviour
     }
 
     [ClientRpc]
-    private void SyncBoardClientRpc()
+    private void SyncBoardClientRpc(string fen)
     {
+        Debug.Log($"SyncBoardClientRpc called. IsServer: {IsServer}, FEN: {fen}");
         BoardManager.Instance.ClearBoard();
+
+        if (!IsServer)
+        {
+            GameManager.Instance.LoadGame(fen); // Load full game state from FEN
+        }
 
         foreach ((Square square, Piece piece) in GameManager.Instance.CurrentPieces)
         {
             BoardManager.Instance.CreateAndPlacePieceGO(piece, square);
-
             GameObject pieceGO = BoardManager.Instance.GetPieceGOAtPosition(square);
             if (pieceGO != null)
             {
@@ -111,7 +137,7 @@ public class NetworkGameController : NetworkBehaviour
             }
         }
 
-        BoardManager.Instance.EnsureOnlyPiecesOfSideAreEnabled(GameManager.Instance.SideToMove);
+        BoardManager.Instance.EnsureOnlyPiecesOfSideAreEnabled(currentTurn.Value);
     }
 
     [ServerRpc(RequireOwnership = false)]
@@ -123,7 +149,7 @@ public class NetworkGameController : NetworkBehaviour
     [ClientRpc]
     private void PongClientRpc(ulong clientId, float serverTime)
     {
-        if(clientId == NetworkManager.Singleton.LocalClientId)
+        if (clientId == NetworkManager.Singleton.LocalClientId)
         {
             float latency = (Time.time - lastPingTime) * 1000;
             Debug.Log($"Ping: {latency} ms");
@@ -134,7 +160,9 @@ public class NetworkGameController : NetworkBehaviour
     public bool IsMyTurn(ulong clientId)
     {
         Side playerSide = clientId == NetworkManager.ServerClientId ? Side.White : Side.Black;
-        return playerSide == currentTurn.Value && isGameActive.Value;
+        bool isMyTurn = playerSide == currentTurn.Value && isGameActive.Value;
+        Debug.Log($"IsMyTurn: ClientId {clientId}, PlayerSide {playerSide}, CurrentTurn {currentTurn.Value}, Result {isMyTurn}");
+        return isMyTurn;
     }
 
     private void Update()
@@ -145,7 +173,7 @@ public class NetworkGameController : NetworkBehaviour
             PingServerRpc(NetworkManager.Singleton.LocalClientId, lastPingTime);
         }
 
-        if (IsServer && Time.time > 5f && !hasTestedRpc) // Test after 5 seconds
+        if (IsServer && Time.time > 5f && !hasTestedRpc)
         {
             TestConnectionClientRpc();
             Debug.Log("Server sent delayed TestConnectionClientRpc");

@@ -28,6 +28,7 @@ public class VisualPiece : MonoBehaviour
     {
         if (enabled)
         {
+            Debug.Log($"OnMouseDown: Piece at {CurrentSquare}, Color: {PieceColor}, Enabled: {enabled}");
             piecePositionSS = boardCamera.WorldToScreenPoint(transform.position);
         }
     }
@@ -45,6 +46,7 @@ public class VisualPiece : MonoBehaviour
     {
         if (enabled)
         {
+            Debug.Log($"OnMouseUp: NetworkGameController exists: {NetworkGameController.Instance != null}, IsMyTurn: {(NetworkGameController.Instance != null ? NetworkGameController.Instance.IsMyTurn(NetworkManager.Singleton.LocalClientId) : false)}, ClientId: {NetworkManager.Singleton.LocalClientId}");
             if (NetworkGameController.Instance != null && NetworkGameController.Instance.IsMyTurn(NetworkManager.Singleton.LocalClientId))
             {
                 potentialLandingSquares.Clear();
@@ -71,8 +73,6 @@ public class VisualPiece : MonoBehaviour
                     }
                 }
 
-                VisualPieceMoved?.Invoke(CurrentSquare, thisTransform, closestSquareTransform);
-
                 ForceNetworkSerializeByMemcpy<NetworkSquare> startSquare = new ForceNetworkSerializeByMemcpy<NetworkSquare>(new NetworkSquare(CurrentSquare));
                 ForceNetworkSerializeByMemcpy<NetworkSquare> endSquare = new ForceNetworkSerializeByMemcpy<NetworkSquare>(new NetworkSquare(StringToSquare(closestSquareTransform.name)));
 
@@ -81,6 +81,7 @@ public class VisualPiece : MonoBehaviour
             else
             {
                 thisTransform.position = thisTransform.parent.position;
+                Debug.Log("Move rejected: Not my turn or no network controller.");
             }
         }
     }
