@@ -15,6 +15,9 @@ public class NetworkGameController : NetworkBehaviour
     [SerializeField]
     public Text latencyText = null;
 
+    [SerializeField]
+    public Text matchResultText = null;
+
     public Side CurrentTurn => currentTurn.Value;
 
     [ClientRpc]
@@ -110,9 +113,12 @@ public class NetworkGameController : NetworkBehaviour
     private void EndGameClientRpc(Side winner)
     {
         string resultText = winner == Side.None ? "Stalemate!" : $"{winner} wins!";
+        Debug.Log($"Game ended. Winner: {winner}"); // Added log for winner
         UIManager.Instance.resultText.text = resultText;
         UIManager.Instance.resultText.gameObject.SetActive(true);
         BoardManager.Instance.SetActiveAllPieces(false);
+
+        if (matchResultText != null) matchResultText.text = resultText;
     }
 
     [ClientRpc]
@@ -123,7 +129,7 @@ public class NetworkGameController : NetworkBehaviour
 
         if (!IsServer)
         {
-            GameManager.Instance.LoadGame(fen); // Load full game state from FEN
+            GameManager.Instance.LoadGame(fen);
         }
 
         foreach ((Square square, Piece piece) in GameManager.Instance.CurrentPieces)
