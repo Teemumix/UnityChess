@@ -89,8 +89,21 @@ public class NetworkGameController : NetworkBehaviour
                 {
                     isGameActive.Value = false;
                     Side winner = latestHalfMove.CausedCheckmate ? currentTurn.Value.Complement() : Side.None;
-                    EndGameClientRpc(winner);
+                    Debug.Log($"Game ended on server. Winner: {winner}, Checkmate: {latestHalfMove.CausedCheckmate}, Stalemate: {latestHalfMove.CausedStalemate}");
+                    if (NetworkObject.IsSpawned)
+                    {
+                        EndGameClientRpc(winner);
+                    }
+                    else
+                    {
+                        Debug.LogError("NetworkObject not spawned. Cannot send EndGameClientRpc.");
+                        EndGameFallback(winner);
+                    }
                 }
+            }
+            else
+            {
+                Debug.LogError("Failed to get latest HalfMove after move execution.");
             }
         }
         else
@@ -106,14 +119,34 @@ public class NetworkGameController : NetworkBehaviour
 
         isGameActive.Value = false;
         Side winner = clientId == NetworkManager.ServerClientId ? Side.Black : Side.White;
-        EndGameClientRpc(winner);
+        Debug.Log($"Resignation on server. Winner: {winner}");
+        if (NetworkObject.IsSpawned)
+        {
+            EndGameClientRpc(winner);
+        }
+        else
+        {
+            Debug.LogError("NetworkObject not spawned. Cannot send EndGameClientRpc.");
+            EndGameFallback(winner);
+        }
     }
 
     [ClientRpc]
     private void EndGameClientRpc(Side winner)
     {
         string resultText = winner == Side.None ? "Stalemate!" : $"{winner} wins!";
-        Debug.Log($"Game ended. Winner: {winner}"); // Added log for winner
+        Debug.Log($"Game ended. Winner: {winner}");
+        UIManager.Instance.resultText.text = resultText;
+        UIManager.Instance.resultText.gameObject.SetActive(true);
+        BoardManager.Instance.SetActiveAllPieces(false);
+
+        if (matchResultText != null) matchResultText.text = resultText;
+    }
+
+    private void EndGameFallback(Side winner)
+    {
+        string resultText = winner == Side.None ? "Stalemate!" : $"{winner} wins!";
+        Debug.Log($"Fallback: Game ended. Winner: {winner}");
         UIManager.Instance.resultText.text = resultText;
         UIManager.Instance.resultText.gameObject.SetActive(true);
         BoardManager.Instance.SetActiveAllPieces(false);

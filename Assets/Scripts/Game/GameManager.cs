@@ -254,7 +254,20 @@ public class GameManager : MonoBehaviourSingleton<GameManager>
 
     public bool HasLegalMoves(Piece piece)
     {
-        return game.TryGetLegalMovesForPiece(piece, out _);
+        if (piece == null || game == null)
+        {
+            Debug.LogWarning("HasLegalMoves: Piece or game is null.");
+            return false;
+        }
+        try
+        {
+            return game.TryGetLegalMovesForPiece(piece, out _);
+        }
+        catch (NullReferenceException e)
+        {
+            Debug.LogError($"HasLegalMoves failed: {e.Message}");
+            return false;
+        }
     }
 }
 
