@@ -38,4 +38,9 @@ public class NetworkBootstrap : MonoBehaviour
             NetworkGameController.Instance.ResignServerRpc(NetworkManager.Singleton.LocalClientId);
         }
     }
+
+    public void ToggleStore()
+    {
+        DLCStoreManager.Instance.ToggleStore(!DLCStoreManager.Instance.storePanel.activeSelf);
+    }
 }

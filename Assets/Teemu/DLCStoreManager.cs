@@ -6,7 +6,7 @@ public class DLCStoreManager : MonoBehaviour
 {
     public static DLCStoreManager Instance { get; private set; }
 
-    [SerializeField] private GameObject storePanel;
+    [SerializeField] public GameObject storePanel;
     [SerializeField] private Transform contentParent;
     [SerializeField] private GameObject skinItemPrefab;
     [SerializeField] private Text gemsText;
