@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "191352791148",
+    "project_id": "cg63a-a36dc",
+    "storage_bucket": "cg63a-a36dc.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:191352791148:android:1f3e30d9f32c3762427849",
+        "android_client_info": {
+          "package_name": "com.mcast.isawesome"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBpBmOL-DLMOCoXDyOeLqF3JUA1pXlBkjY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
