@@ -3,10 +3,10 @@ using UnityEngine.UI;
 
 public class SkinItemUI : MonoBehaviour
 {
-    [SerializeField] private Text nameText;
-    [SerializeField] private Text priceText;
-    [SerializeField] private Image previewImage;
-    [SerializeField] private Button buyButton;
+    [SerializeField] public Text nameText;
+    [SerializeField] public Text priceText;
+    [SerializeField] public Image previewImage;
+    [SerializeField] public Button buyButton;
 
     private string skinName;
     private int price;

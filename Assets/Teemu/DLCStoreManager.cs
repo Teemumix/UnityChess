@@ -14,9 +14,16 @@ public class DLCStoreManager : MonoBehaviour
     private int playerGems = 100;
     private List<SkinData> availableSkins = new List<SkinData>
     {
-        new SkinData { Name = "Knight Avatar", Price = 20, StoragePath = "skins/knight_avatar.png" },
-        new SkinData { Name = "Wizard Avatar", Price = 30, StoragePath = "skins/wizard_avatar.png" },
-        new SkinData { Name = "Dragon Avatar", Price = 50, StoragePath = "skins/dragon_avatar.png" }
+        new SkinData { Name = "Chest", Price = 20, StoragePath = "dlc/chest1.png" },
+        new SkinData { Name = "Diamond", Price = 30, StoragePath = "dlc/diamonds1.png" },
+        new SkinData { Name = "Crystal", Price = 50, StoragePath = "dlc/dlc1.png" },
+        new SkinData { Name = "Red Crystal", Price = 13, StoragePath = "dlc/dlc2.png" },
+        new SkinData { Name = "River", Price = 50, StoragePath = "dlc/dlc3.png" },
+        new SkinData { Name = "Acid Pool", Price = 50, StoragePath = "dlc/dlc4.png" },
+        new SkinData { Name = "Desert", Price = 50, StoragePath = "dlc/dlc5.png" },
+        new SkinData { Name = "Volcano", Price = 48, StoragePath = "dlc/dlc6.png" },
+        new SkinData { Name = "Pyramid", Price = 50, StoragePath = "dlc/dlc7.png" },
+        new SkinData { Name = "Forest", Price = 46, StoragePath = "dlc/dlc8.png" }
     };
 
     private void Awake()
@@ -40,11 +47,13 @@ public class DLCStoreManager : MonoBehaviour
 
     private void PopulateStore()
     {
+        Debug.Log($"Populating store with {availableSkins.Count} skins. ContentParent: {contentParent?.name}");
         foreach (SkinData skin in availableSkins)
         {
             GameObject item = Instantiate(skinItemPrefab, contentParent);
             SkinItemUI itemUI = item.GetComponent<SkinItemUI>();
             itemUI.Setup(skin.Name, skin.Price, skin.StoragePath);
+            Debug.Log($"Instantiated {skin.Name}");
         }
     }
 
