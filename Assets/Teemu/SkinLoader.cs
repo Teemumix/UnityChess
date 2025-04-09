@@ -2,21 +2,20 @@ using UnityEngine;
 using Firebase.Storage;
 using System.IO;
 using System.Threading.Tasks;
-using Firebase.Extensions; // Add this for MainThread callbacks
+using Firebase.Extensions;
 
 public class SkinLoader : MonoBehaviour
 {
     public static SkinLoader Instance { get; private set; }
 
     private FirebaseStorage storage;
-    private bool isInitialized = false;
+    public bool isInitialized = false;
 
     private void Awake()
     {
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
 
-        // Initialize Firebase
         Firebase.FirebaseApp.CheckAndFixDependenciesAsync().ContinueWithOnMainThread(task =>
         {
             if (task.IsCompletedSuccessfully && task.Result == Firebase.DependencyStatus.Available)
@@ -43,6 +42,7 @@ public class SkinLoader : MonoBehaviour
         string localPath = $"{Application.persistentDataPath}/{skinName}.png";
         if (File.Exists(localPath))
         {
+            Debug.Log($"Loading existing skin {skinName} from {localPath}");
             ApplySkin(skinName, localPath);
             return;
         }
@@ -65,19 +65,19 @@ public class SkinLoader : MonoBehaviour
     {
         byte[] bytes = File.ReadAllBytes(localPath);
         Texture2D texture = new Texture2D(2, 2);
-        texture.LoadImage(bytes);
+        if (!texture.LoadImage(bytes))
+        {
+            Debug.LogError($"Failed to load image data for {skinName} from {localPath}");
+            return;
+        }
         Sprite sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), Vector2.zero);
 
-        // Update UI with downloaded skin
         foreach (SkinItemUI item in FindObjectsOfType<SkinItemUI>())
         {
             if (item.nameText.text == skinName)
             {
-                item.previewImage.sprite = sprite;
+                item.SetPreviewSprite(sprite);
             }
         }
-
-        // Notify network of skin change
-        //NetworkPlayerSkinManager.Instance.SetPlayerSkin(skinName, sprite);
     }
 }

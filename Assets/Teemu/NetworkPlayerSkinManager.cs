@@ -3,16 +3,9 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class NetworkPlayerSkinManager : MonoBehaviour
-{
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
+{   
+    [SerializeField] private GameObject whitePlayerIcon;
+    [SerializeField] private GameObject blackPlayerIcon;
 
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
+    
 }

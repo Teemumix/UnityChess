@@ -109,7 +109,7 @@ public class BoardManager : MonoBehaviourSingleton<BoardManager>
             Piece piece = GameManager.Instance.CurrentBoard[pieceBehaviour.CurrentSquare];
             Side turnSide = NetworkGameController.Instance != null ? NetworkGameController.Instance.CurrentTurn : side;
             pieceBehaviour.enabled = pieceBehaviour.PieceColor == turnSide && GameManager.Instance.HasLegalMoves(piece);
-            Debug.Log($"EnsureOnlyPieces: Square: {pieceBehaviour.CurrentSquare}, PieceColor: {pieceBehaviour.PieceColor}, TurnSide: {turnSide}, HasLegalMoves: {GameManager.Instance.HasLegalMoves(piece)}, Enabled: {pieceBehaviour.enabled}");
+            //Debug.Log($"EnsureOnlyPieces: Square: {pieceBehaviour.CurrentSquare}, PieceColor: {pieceBehaviour.PieceColor}, TurnSide: {turnSide}, HasLegalMoves: {GameManager.Instance.HasLegalMoves(piece)}, Enabled: {pieceBehaviour.enabled}");
         }
     }
 

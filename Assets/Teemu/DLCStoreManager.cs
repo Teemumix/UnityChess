@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using System.Collections.Generic;
+using System.Collections;
 
 public class DLCStoreManager : MonoBehaviour
 {
@@ -36,8 +37,7 @@ public class DLCStoreManager : MonoBehaviour
     {
         playerGems = PlayerPrefs.GetInt("PlayerGems", 100);
         UpdateGemsUI();
-
-        PopulateStore();
+        StartCoroutine(PopulateStoreWithDelay()); // Use coroutine for delay
     }
 
     public void ToggleStore(bool isActive)
@@ -45,15 +45,18 @@ public class DLCStoreManager : MonoBehaviour
         storePanel.SetActive(isActive);
     }
 
-    private void PopulateStore()
+    private IEnumerator PopulateStoreWithDelay()
     {
+        yield return new WaitUntil(() => SkinLoader.Instance != null && SkinLoader.Instance.isInitialized);
         Debug.Log($"Populating store with {availableSkins.Count} skins. ContentParent: {contentParent?.name}");
         foreach (SkinData skin in availableSkins)
         {
             GameObject item = Instantiate(skinItemPrefab, contentParent);
             SkinItemUI itemUI = item.GetComponent<SkinItemUI>();
-            itemUI.Setup(skin.Name, skin.Price, skin.StoragePath);
-            Debug.Log($"Instantiated {skin.Name}");
+            bool isOwned = PlayerPrefs.GetInt($"Skin_{skin.Name}_Owned", 0) == 1;
+            itemUI.Setup(skin.Name, skin.Price, skin.StoragePath, isOwned);
+            Debug.Log($"Instantiated {skin.Name}, Owned: {isOwned}");
+            SkinLoader.Instance.LoadSkin(skin.Name, skin.StoragePath); // Load all skins
         }
     }
 
@@ -67,7 +70,7 @@ public class DLCStoreManager : MonoBehaviour
             PlayerPrefs.Save();
             UpdateGemsUI();
             Debug.Log($"Purchased {skinName} for {price} Gems!");
-            //SkinLoader.Instance.LoadSkin(skinName, storagePath); 
+            // No need to load here since all skins are loaded at start
         }
         else
         {
@@ -78,6 +81,7 @@ public class DLCStoreManager : MonoBehaviour
     private void UpdateGemsUI()
     {
         gemsText.text = $"Gems: {playerGems}";
+        Debug.Log($"Gems UI updated to: {playerGems}");
     }
 }
 

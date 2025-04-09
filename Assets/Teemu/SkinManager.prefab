@@ -301,3 +301,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b7b8c8395703cc94aafd33a63e808d33, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  whitePlayerIcon: {fileID: 5625556070593225073}
+  blackPlayerIcon: {fileID: 2661646103987520967}
