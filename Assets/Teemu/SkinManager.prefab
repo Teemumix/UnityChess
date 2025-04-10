@@ -139,7 +139,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 0, y: 0.5}
-  m_AnchoredPosition: {x: 100, y: -150}
+  m_AnchoredPosition: {x: 100, y: 150}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &8713172511505809334
@@ -215,7 +215,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 0, y: 0.5}
-  m_AnchoredPosition: {x: 100, y: 150}
+  m_AnchoredPosition: {x: 100, y: -150}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &3385946811415916024
@@ -266,6 +266,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7668959229994223640}
   - component: {fileID: 5042758172129748131}
+  - component: {fileID: 1642636591907717889}
   m_Layer: 0
   m_Name: SkinManager
   m_TagString: Untagged
@@ -301,5 +302,25 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b7b8c8395703cc94aafd33a63e808d33, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  whitePlayerIcon: {fileID: 5625556070593225073}
-  blackPlayerIcon: {fileID: 2661646103987520967}
+  whitePlayerIcon: {fileID: 5122653179555293191}
+  blackPlayerIcon: {fileID: 3470136734331231211}
+--- !u!114 &1642636591907717889
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7538151572683950498}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  GlobalObjectIdHash: 951099334
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 1
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1

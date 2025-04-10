@@ -80,4 +80,20 @@ public class SkinLoader : MonoBehaviour
             }
         }
     }
+
+    public Sprite GetSkinSprite(string skinName)
+    {
+        string localPath = $"{Application.persistentDataPath}/{skinName}.png";
+        if (File.Exists(localPath))
+        {
+            byte[] bytes = File.ReadAllBytes(localPath);
+            Texture2D texture = new Texture2D(2, 2);
+            if (texture.LoadImage(bytes))
+            {
+                return Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), Vector2.zero);
+            }
+        }
+        Debug.LogWarning($"Skin sprite not found for {skinName}");
+        return null;
+    }
 }

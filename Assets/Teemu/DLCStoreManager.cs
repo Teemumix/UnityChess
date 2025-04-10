@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using System.Collections.Generic;
 using System.Collections;
+using Unity.Netcode;
 
 public class DLCStoreManager : MonoBehaviour
 {
@@ -15,16 +16,16 @@ public class DLCStoreManager : MonoBehaviour
     private int playerGems = 100;
     private List<SkinData> availableSkins = new List<SkinData>
     {
-        new SkinData { Name = "Chest", Price = 20, StoragePath = "dlc/chest1.png" },
-        new SkinData { Name = "Diamond", Price = 30, StoragePath = "dlc/diamonds1.png" },
-        new SkinData { Name = "Crystal", Price = 50, StoragePath = "dlc/dlc1.png" },
-        new SkinData { Name = "Red Crystal", Price = 13, StoragePath = "dlc/dlc2.png" },
-        new SkinData { Name = "River", Price = 50, StoragePath = "dlc/dlc3.png" },
-        new SkinData { Name = "Acid Pool", Price = 50, StoragePath = "dlc/dlc4.png" },
-        new SkinData { Name = "Desert", Price = 50, StoragePath = "dlc/dlc5.png" },
-        new SkinData { Name = "Volcano", Price = 48, StoragePath = "dlc/dlc6.png" },
-        new SkinData { Name = "Pyramid", Price = 50, StoragePath = "dlc/dlc7.png" },
-        new SkinData { Name = "Forest", Price = 46, StoragePath = "dlc/dlc8.png" }
+        new SkinData { Name = "Chest", Price = 38, StoragePath = "dlc/chest1.png" },
+        new SkinData { Name = "Diamond", Price = 12, StoragePath = "dlc/diamonds1.png" },
+        new SkinData { Name = "Crystal", Price = 89, StoragePath = "dlc/dlc1.png" },
+        new SkinData { Name = "Red Crystal", Price = 2, StoragePath = "dlc/dlc2.png" },
+        new SkinData { Name = "River", Price = 33, StoragePath = "dlc/dlc3.png" },
+        new SkinData { Name = "Acid Pool", Price = 26, StoragePath = "dlc/dlc4.png" },
+        new SkinData { Name = "Desert", Price = 18, StoragePath = "dlc/dlc5.png" },
+        new SkinData { Name = "Volcano", Price = 7, StoragePath = "dlc/dlc6.png" },
+        new SkinData { Name = "Pyramid", Price = 4, StoragePath = "dlc/dlc7.png" },
+        new SkinData { Name = "Forest", Price = 1, StoragePath = "dlc/dlc8.png" }
     };
 
     private void Awake()
@@ -35,9 +36,13 @@ public class DLCStoreManager : MonoBehaviour
 
     private void Start()
     {
+        if (NetworkManager.Singleton.IsServer) // Reset only on host
+        {
+            PlayerPrefs.DeleteAll(); // Run once, then comment out
+        }
         playerGems = PlayerPrefs.GetInt("PlayerGems", 100);
         UpdateGemsUI();
-        StartCoroutine(PopulateStoreWithDelay()); // Use coroutine for delay
+        StartCoroutine(PopulateStoreWithDelay()); 
     }
 
     public void ToggleStore(bool isActive)
@@ -58,19 +63,36 @@ public class DLCStoreManager : MonoBehaviour
             Debug.Log($"Instantiated {skin.Name}, Owned: {isOwned}");
             SkinLoader.Instance.LoadSkin(skin.Name, skin.StoragePath); // Load all skins
         }
+
+        string equippedSkin = PlayerPrefs.GetString("EquippedSkin", "");
+        if (!string.IsNullOrEmpty(equippedSkin))
+        {
+            NetworkPlayerSkinManager.Instance.SetPlayerSkin(equippedSkin);
+        }
     }
 
     public void PurchaseSkin(string skinName, int price, string storagePath)
     {
-        if (playerGems >= price)
+    if (playerGems >= price)
         {
             playerGems -= price;
             PlayerPrefs.SetInt("PlayerGems", playerGems);
+            Debug.Log($"Set PlayerGems to {playerGems}");
             PlayerPrefs.SetInt($"Skin_{skinName}_Owned", 1);
+            Debug.Log($"Set Skin_{skinName}_Owned to 1");
+            try
+            {
+                PlayerPrefs.SetString("EquippedSkin", skinName);
+                Debug.Log($"Set EquippedSkin to {skinName}");
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"Failed to set EquippedSkin: {e.Message}");
+            }
             PlayerPrefs.Save();
             UpdateGemsUI();
-            Debug.Log($"Purchased {skinName} for {price} Gems!");
-            // No need to load here since all skins are loaded at start
+            Debug.Log($"Purchased and equipped {skinName} for {price} Gems!");
+            NetworkPlayerSkinManager.Instance.SetPlayerSkin(skinName);
         }
         else
         {
