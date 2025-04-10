@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Collections;
 using Unity.Netcode;
 
-public class DLCStoreManager : MonoBehaviour
+public class DLCStoreManager : NetworkBehaviour
 {
     public static DLCStoreManager Instance { get; private set; }
 
@@ -36,13 +36,18 @@ public class DLCStoreManager : MonoBehaviour
 
     private void Start()
     {
+        if (NetworkManager.Singleton == null)
+        {
+            Debug.LogError("NetworkManager.Singleton is null - ensure NetworkManager is in the scene");
+            return;
+        }
         if (NetworkManager.Singleton.IsServer) // Reset only on host
         {
             PlayerPrefs.DeleteAll(); // Run once, then comment out
         }
         playerGems = PlayerPrefs.GetInt("PlayerGems", 100);
         UpdateGemsUI();
-        StartCoroutine(PopulateStoreWithDelay()); 
+        StartCoroutine(PopulateStoreWithDelay());
     }
 
     public void ToggleStore(bool isActive)
@@ -65,43 +70,74 @@ public class DLCStoreManager : MonoBehaviour
         }
 
         string equippedSkin = PlayerPrefs.GetString("EquippedSkin", "");
-        if (!string.IsNullOrEmpty(equippedSkin))
+        if (!string.IsNullOrEmpty(equippedSkin) && NetworkPlayerSkinManager.Instance != null)
         {
             NetworkPlayerSkinManager.Instance.SetPlayerSkin(equippedSkin);
         }
     }
 
-    public void PurchaseSkin(string skinName, int price, string storagePath)
+    public void PurchaseSkin(string skinName, int cost, string storagePath)
     {
-    if (playerGems >= price)
+        if (!NetworkManager.Singleton.IsClient)
         {
-            playerGems -= price;
+            Debug.LogWarning("PurchaseSkin called on a non-client instance. Ignoring.");
+            return;
+        }
+
+        if (playerGems >= cost && PlayerPrefs.GetInt($"Skin_{skinName}_Owned", 0) == 0)
+        {
+            playerGems -= cost;
             PlayerPrefs.SetInt("PlayerGems", playerGems);
-            Debug.Log($"Set PlayerGems to {playerGems}");
+            Debug.Log("Set PlayerGems to " + playerGems);
             PlayerPrefs.SetInt($"Skin_{skinName}_Owned", 1);
             Debug.Log($"Set Skin_{skinName}_Owned to 1");
-            try
-            {
-                PlayerPrefs.SetString("EquippedSkin", skinName);
-                Debug.Log($"Set EquippedSkin to {skinName}");
-            }
-            catch (System.Exception e)
-            {
-                Debug.LogError($"Failed to set EquippedSkin: {e.Message}");
-            }
+            PlayerPrefs.SetString("EquippedSkin", skinName);
+            Debug.Log("Set EquippedSkin to " + skinName);
             PlayerPrefs.Save();
+
             UpdateGemsUI();
-            Debug.Log($"Purchased and equipped {skinName} for {price} Gems!");
-            NetworkPlayerSkinManager.Instance.SetPlayerSkin(skinName);
+            Debug.Log($"Purchased and equipped {skinName} for {cost} Gems!");
+
+            // Sync purchase with all clients via server
+            SyncPurchaseServerRpc(skinName, cost);
+            if (NetworkPlayerSkinManager.Instance != null)
+            {
+                NetworkPlayerSkinManager.Instance.SetPlayerSkin(skinName);
+            }
         }
         else
         {
-            Debug.Log("Not enough Gems!");
+            Debug.Log("Not enough Gems or skin already owned!");
+        }
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    private void SyncPurchaseServerRpc(string skinName, int cost)
+    {
+        SyncPurchaseClientRpc(skinName, cost);
+    }
+
+    [ClientRpc]
+    private void SyncPurchaseClientRpc(string skinName, int cost)
+    {
+        if (PlayerPrefs.GetInt($"Skin_{skinName}_Owned", 0) == 0) // Only update if not already owned
+        {
+            playerGems -= cost;
+            PlayerPrefs.SetInt("PlayerGems", playerGems);
+            PlayerPrefs.SetInt($"Skin_{skinName}_Owned", 1);
+            PlayerPrefs.SetString("EquippedSkin", skinName);
+            PlayerPrefs.Save();
+            UpdateGemsUI();
+            if (NetworkPlayerSkinManager.Instance != null)
+            {
+                NetworkPlayerSkinManager.Instance.SetPlayerSkin(skinName);
+            }
         }
     }
 
     private void UpdateGemsUI()
     {
+        playerGems = PlayerPrefs.GetInt("PlayerGems", 100); // Sync with PlayerPrefs
         gemsText.text = $"Gems: {playerGems}";
         Debug.Log($"Gems UI updated to: {playerGems}");
     }

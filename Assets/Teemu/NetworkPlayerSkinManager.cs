@@ -20,29 +20,57 @@ public class NetworkPlayerSkinManager : NetworkBehaviour
     {
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
+
+        if (NetworkManager.Singleton == null)
+        {
+            Debug.LogError("NetworkManager.Singleton is null - ensure NetworkManager is in the scene");
+            return;
+        }
+
+        NetworkObject netObj = GetComponent<NetworkObject>();
+        if (netObj == null)
+        {
+            Debug.LogError("NetworkObject component missing on NetworkPlayerSkinManager");
+            return;
+        }
+
+        // Spawn on host only once
+        if (NetworkManager.Singleton.IsServer && !netObj.IsSpawned)
+        {
+            netObj.Spawn();
+            Debug.Log("Host spawned NetworkPlayerSkinManager in Awake");
+        }
     }
 
     private void Start()
     {
-        if (NetworkManager.Singleton != null)
+        if (!IsSpawned)
         {
-            if (NetworkManager.Singleton.IsServer && !IsSpawned)
-            {
-                GetComponent<NetworkObject>().Spawn();
-                Debug.Log("Host spawned NetworkPlayerSkinManager");
-            }
-            else if (NetworkManager.Singleton.IsClient)
-            {
-                Debug.Log("Client waiting for NetworkPlayerSkinManager to spawn");
-                StartCoroutine(WaitForSpawn());
-            }
+            Debug.LogWarning("NetworkPlayerSkinManager not spawned yet! Waiting...");
+            StartCoroutine(WaitForSpawn());
+            return;
+        }
+
+        if (NetworkManager.Singleton.IsClient && !IsServer)
+        {
+            Debug.Log("Client waiting for NetworkPlayerSkinManager to spawn");
+            StartCoroutine(WaitForSpawn());
+        }
+    }
+
+    private void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.S) && NetworkManager.Singleton.IsServer && !IsSpawned)
+        {
+            GetComponent<NetworkObject>().Spawn();
+            Debug.Log("Manually spawned NetworkPlayerSkinManager via S key");
         }
     }
 
     private IEnumerator WaitForSpawn()
     {
         yield return new WaitUntil(() => IsSpawned);
-        Debug.Log("Client confirmed NetworkPlayerSkinManager spawned");
+        Debug.Log("NetworkPlayerSkinManager confirmed spawned - IsServer: " + IsServer + ", IsClient: " + IsClient);
         UpdatePlayerIcons();
     }
 
@@ -53,7 +81,7 @@ public class NetworkPlayerSkinManager : NetworkBehaviour
             NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
             NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnected;
         }
-        Debug.Log($"Network spawn - WhiteIcon: {whitePlayerIcon != null}, BlackIcon: {blackPlayerIcon != null}, IsSpawned: {IsSpawned}");
+        Debug.Log($"OnNetworkSpawn - IsServer: {IsServer}, IsClient: {IsClient}, IsSpawned: {IsSpawned}");
         UpdatePlayerIcons();
         if (IsHost)
         {
@@ -61,7 +89,7 @@ public class NetworkPlayerSkinManager : NetworkBehaviour
             if (!string.IsNullOrEmpty(equippedSkin))
             {
                 Debug.Log($"Host forcing sync of {equippedSkin} on spawn");
-                SetPlayerSkinServerRpc(equippedSkin, NetworkManager.Singleton.LocalClientId);
+                SetPlayerSkin(equippedSkin);
             }
         }
     }
@@ -78,7 +106,7 @@ public class NetworkPlayerSkinManager : NetworkBehaviour
             blackPlayerId.Value = clientId;
             if (!string.IsNullOrEmpty(whitePlayerSkin.Value))
             {
-                SetPlayerSkinServerRpc(whitePlayerSkin.Value, whitePlayerId.Value);
+                SyncSkinServerRpc(whitePlayerSkin.Value);
             }
         }
         UpdatePlayerIcons();
@@ -102,6 +130,12 @@ public class NetworkPlayerSkinManager : NetworkBehaviour
 
     public void SetPlayerSkin(string skinName)
     {
+        if (!NetworkManager.Singleton.IsClient)
+        {
+            Debug.LogWarning("SetPlayerSkin called on a non-client instance. Ignoring.");
+            return;
+        }
+
         Sprite sprite = SkinLoader.Instance.GetSkinSprite(skinName);
         if (sprite == null)
         {
@@ -109,59 +143,61 @@ public class NetworkPlayerSkinManager : NetworkBehaviour
             return;
         }
         UpdateLocalIcon(skinName, sprite);
-        Debug.Log($"SetPlayerSkin - IsClient: {NetworkManager.Singleton?.IsClient}, IsSpawned: {IsSpawned}");
-        StartCoroutine(SyncSkinWhenReady(skinName));
+        Debug.Log($"SetPlayerSkin - IsClient: {NetworkManager.Singleton.IsClient}, IsSpawned: {IsSpawned}");
+
+        // Always attempt to sync, even if not spawned yet
+        if (NetworkManager.Singleton.IsServer)
+        {
+            if (!IsSpawned)
+            {
+                Debug.LogWarning("NetworkObject not spawned yet! Forcing sync anyway...");
+            }
+            SyncSkinServerRpc(skinName);
+        }
+        else if (!IsSpawned)
+        {
+            StartCoroutine(SyncSkinWhenReady(skinName));
+        }
+        else
+        {
+            SyncSkinServerRpc(skinName);
+        }
     }
 
     private IEnumerator SyncSkinWhenReady(string skinName)
     {
-        Debug.Log($"Waiting to sync {skinName} - Initial state - IsClient: {NetworkManager.Singleton?.IsClient}, IsSpawned: {IsSpawned}");
+        Debug.Log($"Waiting to sync {skinName} - Initial state - IsClient: {NetworkManager.Singleton.IsClient}, IsSpawned: {IsSpawned}");
         yield return new WaitUntil(() => NetworkManager.Singleton != null && NetworkManager.Singleton.IsClient && IsSpawned);
         Debug.Log($"Syncing skin {skinName} for ClientId: {NetworkManager.Singleton.LocalClientId}");
-        SetPlayerSkinServerRpc(skinName, NetworkManager.Singleton.LocalClientId);
+        SyncSkinServerRpc(skinName);
     }
 
     [ServerRpc(RequireOwnership = false)]
-    private void SetPlayerSkinServerRpc(string skinName, ulong clientId)
+    private void SyncSkinServerRpc(string skinName)
     {
-        Debug.Log($"ServerRpc called - Skin: {skinName}, ClientId: {clientId}");
-        if (clientId == whitePlayerId.Value)
+        Debug.Log($"ServerRpc called - Skin: {skinName}, ClientId: {NetworkManager.Singleton.LocalClientId}");
+        if (NetworkManager.Singleton.LocalClientId == whitePlayerId.Value)
         {
             whitePlayerSkin.Value = skinName;
         }
-        else if (clientId == blackPlayerId.Value)
+        else if (NetworkManager.Singleton.LocalClientId == blackPlayerId.Value)
         {
             blackPlayerSkin.Value = skinName;
         }
-        UpdatePlayerSkinClientRpc(skinName, clientId);
+        SyncSkinClientRpc(skinName);
     }
 
     [ClientRpc]
-    private void UpdatePlayerSkinClientRpc(string skinName, ulong clientId)
+    private void SyncSkinClientRpc(string skinName)
     {
-        Debug.Log($"ClientRpc received - Skin: {skinName}, ClientId: {clientId}");
+        Debug.Log($"ClientRpc received - Skin: {skinName}");
         Sprite sprite = SkinLoader.Instance.GetSkinSprite(skinName);
         if (sprite == null)
         {
             Debug.LogError($"Client failed to get sprite for {skinName}");
             return;
         }
-        if (clientId == whitePlayerId.Value)
-        {
-            if (whitePlayerIcon != null)
-            {
-                whitePlayerIcon.sprite = sprite;
-                Debug.Log($"Updated whitePlayerIcon to {skinName} for client {clientId}");
-            }
-        }
-        else if (clientId == blackPlayerId.Value)
-        {
-            if (blackPlayerIcon != null)
-            {
-                blackPlayerIcon.sprite = sprite;
-                Debug.Log($"Updated blackPlayerIcon to {skinName} for client {clientId}");
-            }
-        }
+        UpdateLocalIcon(skinName, sprite);
     }
 
     private void UpdateLocalIcon(string skinName, Sprite sprite)
