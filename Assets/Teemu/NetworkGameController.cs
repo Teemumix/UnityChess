@@ -180,6 +180,13 @@ public class NetworkGameController : NetworkBehaviour
         }
     }
 
+    // Check if it's the player's turn
+    public bool IsMyTurn(ulong clientId)
+    {
+        Side playerSide = clientId == NetworkManager.ServerClientId ? Side.White : Side.Black;
+        return playerSide == currentTurn.Value && isGameActive.Value;
+    }
+
     // Log match start event
     private void LogMatchStart()
     {
