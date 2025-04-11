@@ -3,6 +3,8 @@ using UnityEngine.UI;
 using System.Collections.Generic;
 using System.Collections;
 using Unity.Netcode;
+using UnityEngine.Analytics;
+using Firebase.Analytics;
 
 public class DLCStoreManager : NetworkBehaviour
 {
@@ -76,7 +78,7 @@ public class DLCStoreManager : NetworkBehaviour
         }
     }
 
-    public void PurchaseSkin(string skinName, int cost, string storagePath)
+public void PurchaseSkin(string skinName, int cost, string storagePath)
     {
         if (!NetworkManager.Singleton.IsClient)
         {
@@ -97,8 +99,8 @@ public class DLCStoreManager : NetworkBehaviour
 
             UpdateGemsUI();
             Debug.Log($"Purchased and equipped {skinName} for {cost} Gems!");
+            LogDLCPurchase(skinName, cost);
 
-            // Sync purchase with all clients via server
             SyncPurchaseServerRpc(skinName, cost);
             if (NetworkPlayerSkinManager.Instance != null)
             {
@@ -109,6 +111,25 @@ public class DLCStoreManager : NetworkBehaviour
         {
             Debug.Log("Not enough Gems or skin already owned!");
         }
+    }
+
+    private void LogDLCPurchase(string skinName, int cost)
+    {
+        Analytics.CustomEvent("DLCPurchase", new System.Collections.Generic.Dictionary<string, object>
+        {
+            { "SkinName", skinName },
+            { "Cost", cost },
+            { "Timestamp", System.DateTime.UtcNow.ToString("o") },
+            { "ClientID", NetworkManager.Singleton.LocalClientId.ToString() }
+        });
+        FirebaseAnalytics.LogEvent("DLCPurchase", new Parameter[]
+        {
+            new Parameter("SkinName", skinName),
+            new Parameter("Cost", cost.ToString()),
+            new Parameter("Timestamp", System.DateTime.UtcNow.ToString("o")),
+            new Parameter("ClientID", NetworkManager.Singleton.LocalClientId.ToString())
+        });
+        Debug.Log($"Logged DLCPurchase - Skin: {skinName}, Cost: {cost}");
     }
 
     [ServerRpc(RequireOwnership = false)]

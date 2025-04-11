@@ -2,6 +2,8 @@ using Unity.Netcode;
 using UnityChess;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.Analytics; 
+using Firebase.Analytics; 
 
 public class NetworkGameController : NetworkBehaviour
 {
@@ -40,6 +42,7 @@ public class NetworkGameController : NetworkBehaviour
             isGameActive.Value = true;
             GameManager.Instance.StartNewGame();
             SyncBoardClientRpc(GameManager.Instance.SerializeGame());
+            LogMatchStart(); // Log match start
         }
         else
         {
@@ -141,6 +144,8 @@ public class NetworkGameController : NetworkBehaviour
         BoardManager.Instance.SetActiveAllPieces(false);
 
         if (matchResultText != null) matchResultText.text = resultText;
+
+        if (IsServer) LogMatchEnd(winner); // Log match end on server
     }
 
     private void EndGameFallback(Side winner)
@@ -202,6 +207,40 @@ public class NetworkGameController : NetworkBehaviour
         bool isMyTurn = playerSide == currentTurn.Value && isGameActive.Value;
         Debug.Log($"IsMyTurn: ClientId {clientId}, PlayerSide {playerSide}, CurrentTurn {currentTurn.Value}, Result {isMyTurn}");
         return isMyTurn;
+    }
+
+    private void LogMatchStart()
+    {
+        string matchId = System.Guid.NewGuid().ToString();
+        Analytics.CustomEvent("MatchStarted", new System.Collections.Generic.Dictionary<string, object>
+        {
+            { "MatchID", matchId },
+            { "Timestamp", System.DateTime.UtcNow.ToString("o") }
+        });
+        FirebaseAnalytics.LogEvent("MatchStarted", new Parameter[]
+        {
+            new Parameter("MatchID", matchId),
+            new Parameter("Timestamp", System.DateTime.UtcNow.ToString("o"))
+        });
+        Debug.Log($"Logged MatchStarted - MatchID: {matchId}");
+    }
+
+    private void LogMatchEnd(Side winner)
+    {
+        string matchId = System.Guid.NewGuid().ToString(); // Simplified; ideally, match this with start ID
+        Analytics.CustomEvent("MatchEnded", new System.Collections.Generic.Dictionary<string, object>
+        {
+            { "MatchID", matchId },
+            { "Winner", winner.ToString() },
+            { "Timestamp", System.DateTime.UtcNow.ToString("o") }
+        });
+        FirebaseAnalytics.LogEvent("MatchEnded", new Parameter[]
+        {
+            new Parameter("MatchID", matchId),
+            new Parameter("Winner", winner.ToString()),
+            new Parameter("Timestamp", System.DateTime.UtcNow.ToString("o"))
+        });
+        Debug.Log($"Logged MatchEnded - MatchID: {matchId}, Winner: {winner}");
     }
 
     private void Update()
