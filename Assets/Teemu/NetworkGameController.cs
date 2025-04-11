@@ -160,7 +160,7 @@ public class NetworkGameController : NetworkBehaviour
     }
 
     [ClientRpc]
-    private void SyncBoardClientRpc(string fen)
+    public void SyncBoardClientRpc(string fen)
     {
         Debug.Log($"SyncBoardClientRpc called. IsServer: {IsServer}, FEN: {fen}");
         BoardManager.Instance.ClearBoard();
