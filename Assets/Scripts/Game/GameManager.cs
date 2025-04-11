@@ -8,15 +8,11 @@ using Unity.Netcode;
 
 public class GameManager : MonoBehaviourSingleton<GameManager>
 {
-    // Events signalling various game state changes.
     public static event Action NewGameStartedEvent;
     public static event Action GameEndedEvent;
     public static event Action GameResetToHalfMoveEvent;
     public static event Action MoveExecutedEvent;
-    
-    /// <summary>
-    /// Gets the current board state from the game.
-    /// </summary>
+
     public Board CurrentBoard
     {
         get
@@ -26,9 +22,6 @@ public class GameManager : MonoBehaviourSingleton<GameManager>
         }
     }
 
-    /// <summary>
-    /// Gets the side (White/Black) whose turn it is to move.
-    /// </summary>
     public Side SideToMove
     {
         get
@@ -78,6 +71,7 @@ public class GameManager : MonoBehaviourSingleton<GameManager>
     private Dictionary<GameSerializationType, IGameSerializer> serializersByType;
     private GameSerializationType selectedSerializationType = GameSerializationType.FEN;
 
+    // Initialize game components and serializers
     public void Start()
     {
         VisualPiece.VisualPieceMoved += OnPieceMoved;
@@ -93,16 +87,16 @@ public class GameManager : MonoBehaviourSingleton<GameManager>
 #endif
     }
 
+    // Set board state from piece data
     public void SetBoardState(PieceData[] pieces)
     {
-        game = new Game(); // Reset to initial state
+        game = new Game();
         if (!game.BoardTimeline.TryGetCurrent(out Board currentBoard))
         {
             Debug.LogError("Failed to get current board from BoardTimeline.");
             return;
         }
 
-        // Manually clear the board by setting all positions to null
         for (int file = 1; file <= 8; file++)
         {
             for (int rank = 1; rank <= 8; rank++)
@@ -111,21 +105,21 @@ public class GameManager : MonoBehaviourSingleton<GameManager>
             }
         }
 
-        // Place pieces from PieceData
         foreach (PieceData pieceData in pieces)
         {
             (Square square, Piece piece) = pieceData.ToSquareAndPiece();
             currentBoard[square.File, square.Rank] = piece;
         }
-        Debug.Log($"SetBoardState: Updated board with {pieces.Length} pieces.");
     }
 
+    // Begin a new chess game
     public async void StartNewGame()
     {
         game = new Game();
         NewGameStartedEvent?.Invoke();
     }
 
+    // Serialize current game state
     public string SerializeGame()
     {
         return serializersByType.TryGetValue(selectedSerializationType, out IGameSerializer serializer)
@@ -133,12 +127,14 @@ public class GameManager : MonoBehaviourSingleton<GameManager>
             : null;
     }
 
+    // Load game from serialized string
     public void LoadGame(string serializedGame)
     {
         game = serializersByType[selectedSerializationType].Deserialize(serializedGame);
         NewGameStartedEvent?.Invoke();
     }
 
+    // Reset game to a specific move
     public void ResetGameToHalfMoveIndex(int halfMoveIndex)
     {
         if (!game.ResetGameToHalfMoveIndex(halfMoveIndex)) return;
@@ -147,13 +143,11 @@ public class GameManager : MonoBehaviourSingleton<GameManager>
         GameResetToHalfMoveEvent?.Invoke();
     }
 
+    // Attempt to execute a chess move
     public bool TryExecuteMove(Movement move)
     {
         if (!game.TryExecuteMove(move))
-        {
-            Debug.Log($"TryExecuteMove failed for move {move.Start.File},{move.Start.Rank} to {move.End.File},{move.End.Rank}");
             return false;
-        }
 
         HalfMoveTimeline.TryGetCurrent(out HalfMove latestHalfMove);
         if (latestHalfMove.CausedCheckmate || latestHalfMove.CausedStalemate)
@@ -170,6 +164,7 @@ public class GameManager : MonoBehaviourSingleton<GameManager>
         return true;
     }
 
+    // Handle special move logic (castling, en passant, promotion)
     private async Task<bool> TryHandleSpecialMoveBehaviourAsync(SpecialMove specialMove)
     {
         switch (specialMove)
@@ -189,9 +184,7 @@ public class GameManager : MonoBehaviourSingleton<GameManager>
                 UIManager.Instance.SetActivePromotionUI(false);
                 BoardManager.Instance.SetActiveAllPieces(true);
                 if (promotionUITaskCancellationTokenSource == null || promotionUITaskCancellationTokenSource.Token.IsCancellationRequested)
-                {
                     return false;
-                }
                 promotionMove.SetPromotionPiece(PromotionUtil.GeneratePromotionPiece(choice, SideToMove));
                 BoardManager.Instance.TryDestroyVisualPiece(promotionMove.Start);
                 BoardManager.Instance.TryDestroyVisualPiece(promotionMove.End);
@@ -208,6 +201,7 @@ public class GameManager : MonoBehaviourSingleton<GameManager>
         }
     }
 
+    // Get user's promotion choice
     private ElectedPiece GetUserPromotionPieceChoice()
     {
         while (userPromotionChoice == ElectedPiece.None) { }
@@ -216,22 +210,19 @@ public class GameManager : MonoBehaviourSingleton<GameManager>
         return result;
     }
 
+    // Set user's promotion choice
     public void ElectPiece(ElectedPiece choice)
     {
         userPromotionChoice = choice;
     }
 
+    // Process piece movement on board
     private async void OnPieceMoved(Square movedPieceInitialSquare, Transform movedPieceTransform, Transform closestBoardSquareTransform, Piece promotionPiece = null)
     {
         Square endSquare = new Square(closestBoardSquareTransform.name);
         if (!game.TryGetLegalMove(movedPieceInitialSquare, endSquare, out Movement move))
         {
             movedPieceTransform.position = movedPieceTransform.parent.position;
-#if DEBUG_VIEW
-            Piece movedPiece = CurrentBoard[movedPieceInitialSquare];
-            game.TryGetLegalMovesForPiece(movedPiece, out ICollection<Movement> legalMoves);
-            UnityChessDebug.ShowLegalMovesInLog(legalMoves);
-#endif
             return;
         }
 
@@ -252,13 +243,11 @@ public class GameManager : MonoBehaviourSingleton<GameManager>
         }
     }
 
+    // Check if a piece has legal moves
     public bool HasLegalMoves(Piece piece)
     {
         if (piece == null || game == null)
-        {
-            Debug.LogWarning("HasLegalMoves: Piece or game is null.");
             return false;
-        }
         try
         {
             return game.TryGetLegalMovesForPiece(piece, out _);
@@ -303,11 +292,12 @@ public struct PieceData : INetworkSerializable
         return (square, piece);
     }
 
-		public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
-		{
-			serializer.SerializeValue(ref File);
-			serializer.SerializeValue(ref Rank);
-			serializer.SerializeValue(ref PieceType);
-			serializer.SerializeValue(ref Owner);
-		}
+    // Serialize piece data for network
+    public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+    {
+        serializer.SerializeValue(ref File);
+        serializer.SerializeValue(ref Rank);
+        serializer.SerializeValue(ref PieceType);
+        serializer.SerializeValue(ref Owner);
+    }
 }

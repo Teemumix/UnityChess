@@ -3,34 +3,25 @@ using Unity.Netcode;
 
 public class NetworkBootstrap : MonoBehaviour
 {
-    public GameObject networkGameControllerPrefab; // Assign in Inspector
+    public GameObject networkGameControllerPrefab;
 
+    // Start network as host
     public void StartHost()
     {
         if (NetworkManager.Singleton.StartHost())
         {
-            Debug.Log("Host started: true");
             NetworkObject ngo = Instantiate(networkGameControllerPrefab).GetComponent<NetworkObject>();
             ngo.Spawn();
         }
-        else
-        {
-            Debug.Log("Host started: false");
-        }
     }
 
+    // Start network as client
     public void StartClient()
     {
-        if (NetworkManager.Singleton.StartClient())
-        {
-            Debug.Log("Client started: true");
-        }
-        else
-        {
-            Debug.Log("Client started: false");
-        }
+        NetworkManager.Singleton.StartClient();
     }
 
+    // Resign from the game
     public void Resign()
     {
         if (NetworkGameController.Instance != null)
@@ -39,6 +30,7 @@ public class NetworkBootstrap : MonoBehaviour
         }
     }
 
+    // Toggle store visibility
     public void ToggleStore()
     {
         DLCStoreManager.Instance.ToggleStore(!DLCStoreManager.Instance.storePanel.activeSelf);

@@ -11,6 +11,7 @@ public class SkinLoader : MonoBehaviour
     private FirebaseStorage storage;
     public bool isInitialized = false;
 
+    // Set up singleton and initialize Firebase Storage
     private void Awake()
     {
         if (Instance == null) Instance = this;
@@ -22,7 +23,6 @@ public class SkinLoader : MonoBehaviour
             {
                 storage = FirebaseStorage.DefaultInstance;
                 isInitialized = true;
-                Debug.Log("Firebase Storage initialized successfully.");
             }
             else
             {
@@ -31,18 +31,15 @@ public class SkinLoader : MonoBehaviour
         });
     }
 
+    // Load skin from Firebase or local storage
     public async void LoadSkin(string skinName, string storagePath)
     {
         if (!isInitialized)
-        {
-            Debug.LogError("Firebase Storage not initialized yet. Cannot load skin.");
             return;
-        }
 
         string localPath = $"{Application.persistentDataPath}/{skinName}.png";
         if (File.Exists(localPath))
         {
-            Debug.Log($"Loading existing skin {skinName} from {localPath}");
             ApplySkin(skinName, localPath);
             return;
         }
@@ -50,9 +47,8 @@ public class SkinLoader : MonoBehaviour
         try
         {
             StorageReference skinRef = storage.GetReference(storagePath);
-            byte[] data = await skinRef.GetBytesAsync(1024 * 1024); // 1MB max
+            byte[] data = await skinRef.GetBytesAsync(1024 * 1024);
             File.WriteAllBytes(localPath, data);
-            Debug.Log($"Downloaded {skinName} to {localPath}");
             ApplySkin(skinName, localPath);
         }
         catch (System.Exception e)
@@ -61,15 +57,14 @@ public class SkinLoader : MonoBehaviour
         }
     }
 
+    // Apply downloaded skin to UI
     private void ApplySkin(string skinName, string localPath)
     {
         byte[] bytes = File.ReadAllBytes(localPath);
         Texture2D texture = new Texture2D(2, 2);
         if (!texture.LoadImage(bytes))
-        {
-            Debug.LogError($"Failed to load image data for {skinName} from {localPath}");
             return;
-        }
+
         Sprite sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), Vector2.zero);
 
         foreach (SkinItemUI item in FindObjectsOfType<SkinItemUI>())
@@ -81,6 +76,7 @@ public class SkinLoader : MonoBehaviour
         }
     }
 
+    // Get sprite for a skin
     public Sprite GetSkinSprite(string skinName)
     {
         string localPath = $"{Application.persistentDataPath}/{skinName}.png";
@@ -93,7 +89,6 @@ public class SkinLoader : MonoBehaviour
                 return Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), Vector2.zero);
             }
         }
-        Debug.LogWarning($"Skin sprite not found for {skinName}");
         return null;
     }
 }

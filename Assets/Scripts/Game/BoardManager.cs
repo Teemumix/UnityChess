@@ -12,6 +12,7 @@ public class BoardManager : MonoBehaviourSingleton<BoardManager>
     private const float BoardPlaneSideHalfLength = BoardPlaneSideLength * 0.5f;
     private const float BoardHeight = 1.6f;
 
+    // Initialize board squares and event subscriptions
     private void Awake()
     {
         GameManager.NewGameStartedEvent += OnNewGameStarted;
@@ -44,6 +45,7 @@ public class BoardManager : MonoBehaviourSingleton<BoardManager>
         }
     }
 
+    // Set up board for a new game
     private void OnNewGameStarted()
     {
         ClearBoard();
@@ -54,6 +56,7 @@ public class BoardManager : MonoBehaviourSingleton<BoardManager>
         EnsureOnlyPiecesOfSideAreEnabled(GameManager.Instance.SideToMove);
     }
 
+    // Reset board to a specific move state
     private void OnGameResetToHalfMove()
     {
         ClearBoard();
@@ -68,6 +71,7 @@ public class BoardManager : MonoBehaviourSingleton<BoardManager>
             EnsureOnlyPiecesOfSideAreEnabled(GameManager.Instance.SideToMove);
     }
 
+    // Move rook during castling
     public void CastleRook(Square rookPosition, Square endSquare)
     {
         GameObject rookGO = GetPieceGOAtPosition(rookPosition);
@@ -75,6 +79,7 @@ public class BoardManager : MonoBehaviourSingleton<BoardManager>
         rookGO.transform.localPosition = Vector3.zero;
     }
 
+    // Create and place a piece on the board
     public void CreateAndPlacePieceGO(Piece piece, Square position)
     {
         string modelName = $"{piece.Owner} {piece.GetType().Name}";
@@ -84,6 +89,7 @@ public class BoardManager : MonoBehaviourSingleton<BoardManager>
         );
     }
 
+    // Find squares within a radius
     public void GetSquareGOsWithinRadius(List<GameObject> squareGOs, Vector3 positionWS, float radius)
     {
         float radiusSqr = radius * radius;
@@ -94,6 +100,7 @@ public class BoardManager : MonoBehaviourSingleton<BoardManager>
         }
     }
 
+    // Enable or disable all pieces
     public void SetActiveAllPieces(bool active)
     {
         VisualPiece[] visualPiece = GetComponentsInChildren<VisualPiece>(true);
@@ -101,6 +108,7 @@ public class BoardManager : MonoBehaviourSingleton<BoardManager>
             pieceBehaviour.enabled = active;
     }
 
+    // Enable pieces for the current turn
     public void EnsureOnlyPiecesOfSideAreEnabled(Side side)
     {
         VisualPiece[] visualPiece = GetComponentsInChildren<VisualPiece>(true);
@@ -109,10 +117,10 @@ public class BoardManager : MonoBehaviourSingleton<BoardManager>
             Piece piece = GameManager.Instance.CurrentBoard[pieceBehaviour.CurrentSquare];
             Side turnSide = NetworkGameController.Instance != null ? NetworkGameController.Instance.CurrentTurn : side;
             pieceBehaviour.enabled = pieceBehaviour.PieceColor == turnSide && GameManager.Instance.HasLegalMoves(piece);
-            //Debug.Log($"EnsureOnlyPieces: Square: {pieceBehaviour.CurrentSquare}, PieceColor: {pieceBehaviour.PieceColor}, TurnSide: {turnSide}, HasLegalMoves: {GameManager.Instance.HasLegalMoves(piece)}, Enabled: {pieceBehaviour.enabled}");
         }
     }
 
+    // Remove a piece from the board
     public void TryDestroyVisualPiece(Square position)
     {
         VisualPiece visualPiece = positionMap[position].GetComponentInChildren<VisualPiece>();
@@ -120,18 +128,21 @@ public class BoardManager : MonoBehaviourSingleton<BoardManager>
             DestroyImmediate(visualPiece.gameObject);
     }
 
+    // Get piece GameObject at a position
     public GameObject GetPieceGOAtPosition(Square position)
     {
         GameObject square = GetSquareGOByPosition(position);
         return square.transform.childCount == 0 ? null : square.transform.GetChild(0).gameObject;
     }
 
+    // Convert file/rank to board position
     private static float FileOrRankToSidePosition(int index)
     {
         float t = (index - 1) / 7f;
         return Mathf.Lerp(-BoardPlaneSideHalfLength, BoardPlaneSideHalfLength, t);
     }
 
+    // Clear all pieces from the board
     public void ClearBoard()
     {
         VisualPiece[] visualPiece = GetComponentsInChildren<VisualPiece>(true);
@@ -141,6 +152,7 @@ public class BoardManager : MonoBehaviourSingleton<BoardManager>
         }
     }
 
+    // Get square GameObject by position
     public GameObject GetSquareGOByPosition(Square position) =>
         Array.Find(allSquaresGO, go => go.name == SquareToString(position));
 }

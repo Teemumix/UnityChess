@@ -10,28 +10,26 @@ public class AnalyticsManager : MonoBehaviour
     public FirebaseDatabase Database { get; private set; }
     private bool isFirebaseInitialized = false;
 
+    // Set up singleton and start Firebase initialization
     private void Awake()
     {
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
 
         DontDestroyOnLoad(gameObject);
-
         InitializeFirebase();
     }
 
+    // Initialize Firebase services
     private async void InitializeFirebase()
     {
-        Debug.Log("Starting Firebase initialization...");
         var dependencyStatus = await FirebaseApp.CheckAndFixDependenciesAsync();
         if (dependencyStatus == DependencyStatus.Available)
         {
             FirebaseApp app = FirebaseApp.DefaultInstance;
-            // Explicitly set the database URL from google-services.json
             Database = FirebaseDatabase.GetInstance(app, "https://cg63a-a36dc-default-rtdb.firebaseio.com/");
             FirebaseAnalytics.SetAnalyticsCollectionEnabled(true);
             isFirebaseInitialized = true;
-            Debug.Log($"Firebase initialized successfully. App: {app.Name}, Database URL: {Database.RootReference.ToString()}");
         }
         else
         {

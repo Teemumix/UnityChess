@@ -18,21 +18,23 @@ public class VisualPiece : MonoBehaviour
     private Transform thisTransform;
     private List<GameObject> potentialLandingSquares = new List<GameObject>();
 
+    // Set up piece transform and camera
     private void Start()
     {
         thisTransform = transform;
         boardCamera = Camera.main;
     }
 
+    // Start dragging piece
     public void OnMouseDown()
     {
         if (enabled)
         {
-            Debug.Log($"OnMouseDown: Piece at {CurrentSquare}, Color: {PieceColor}, Enabled: {enabled}");
             piecePositionSS = boardCamera.WorldToScreenPoint(transform.position);
         }
     }
 
+    // Drag piece with mouse
     private void OnMouseDrag()
     {
         if (enabled)
@@ -42,47 +44,43 @@ public class VisualPiece : MonoBehaviour
         }
     }
 
+    // Drop piece and request move
     public void OnMouseUp()
     {
-        if (enabled)
+        if (enabled && NetworkGameController.Instance != null && NetworkGameController.Instance.IsMyTurn(NetworkManager.Singleton.LocalClientId))
         {
-            Debug.Log($"OnMouseUp: NetworkGameController exists: {NetworkGameController.Instance != null}, IsMyTurn: {(NetworkGameController.Instance != null ? NetworkGameController.Instance.IsMyTurn(NetworkManager.Singleton.LocalClientId) : false)}, ClientId: {NetworkManager.Singleton.LocalClientId}");
-            if (NetworkGameController.Instance != null && NetworkGameController.Instance.IsMyTurn(NetworkManager.Singleton.LocalClientId))
-            {
-                potentialLandingSquares.Clear();
-                BoardManager.Instance.GetSquareGOsWithinRadius(potentialLandingSquares, thisTransform.position, SquareCollisionRadius);
+            potentialLandingSquares.Clear();
+            BoardManager.Instance.GetSquareGOsWithinRadius(potentialLandingSquares, thisTransform.position, SquareCollisionRadius);
 
-                if (potentialLandingSquares.Count == 0)
-                {
-                    thisTransform.position = thisTransform.parent.position;
-                    return;
-                }
-
-                Transform closestSquareTransform = potentialLandingSquares[0].transform;
-                float shortestDistanceFromPieceSquared = (closestSquareTransform.position - thisTransform.position).sqrMagnitude;
-
-                for (int i = 1; i < potentialLandingSquares.Count; i++)
-                {
-                    GameObject potentialLandingSquare = potentialLandingSquares[i];
-                    float distanceFromPieceSquared = (potentialLandingSquare.transform.position - thisTransform.position).sqrMagnitude;
-
-                    if (distanceFromPieceSquared < shortestDistanceFromPieceSquared)
-                    {
-                        shortestDistanceFromPieceSquared = distanceFromPieceSquared;
-                        closestSquareTransform = potentialLandingSquare.transform;
-                    }
-                }
-
-                ForceNetworkSerializeByMemcpy<NetworkSquare> startSquare = new ForceNetworkSerializeByMemcpy<NetworkSquare>(new NetworkSquare(CurrentSquare));
-                ForceNetworkSerializeByMemcpy<NetworkSquare> endSquare = new ForceNetworkSerializeByMemcpy<NetworkSquare>(new NetworkSquare(StringToSquare(closestSquareTransform.name)));
-
-                NetworkGameController.Instance.RequestMoveServerRpc(startSquare, endSquare, NetworkManager.Singleton.LocalClientId);
-            }
-            else
+            if (potentialLandingSquares.Count == 0)
             {
                 thisTransform.position = thisTransform.parent.position;
-                Debug.Log("Move rejected: Not my turn or no network controller.");
+                return;
             }
+
+            Transform closestSquareTransform = potentialLandingSquares[0].transform;
+            float shortestDistanceFromPieceSquared = (closestSquareTransform.position - thisTransform.position).sqrMagnitude;
+
+            for (int i = 1; i < potentialLandingSquares.Count; i++)
+            {
+                GameObject potentialLandingSquare = potentialLandingSquares[i];
+                float distanceFromPieceSquared = (potentialLandingSquare.transform.position - thisTransform.position).sqrMagnitude;
+
+                if (distanceFromPieceSquared < shortestDistanceFromPieceSquared)
+                {
+                    shortestDistanceFromPieceSquared = distanceFromPieceSquared;
+                    closestSquareTransform = potentialLandingSquare.transform;
+                }
+            }
+
+            ForceNetworkSerializeByMemcpy<NetworkSquare> startSquare = new ForceNetworkSerializeByMemcpy<NetworkSquare>(new NetworkSquare(CurrentSquare));
+            ForceNetworkSerializeByMemcpy<NetworkSquare> endSquare = new ForceNetworkSerializeByMemcpy<NetworkSquare>(new NetworkSquare(StringToSquare(closestSquareTransform.name)));
+
+            NetworkGameController.Instance.RequestMoveServerRpc(startSquare, endSquare, NetworkManager.Singleton.LocalClientId);
+        }
+        else
+        {
+            thisTransform.position = thisTransform.parent.position;
         }
     }
 }

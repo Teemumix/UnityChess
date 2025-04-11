@@ -14,12 +14,14 @@ public class GameStateManager : NetworkBehaviour
     [SerializeField] private Button loadButton;
     [SerializeField] private InputField matchIdInput;
 
+    // Set up singleton
     private void Awake()
     {
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
     }
 
+    // Initialize Firebase and UI buttons
     private async void Start()
     {
         if (AnalyticsManager.Instance == null)
@@ -29,29 +31,24 @@ public class GameStateManager : NetworkBehaviour
         }
         await WaitForFirebaseInitialization();
         dbReference = AnalyticsManager.Instance.Database.RootReference.Child("gameStates");
-        Debug.Log($"GameStateManager initialized - dbReference: {(dbReference != null ? dbReference.ToString() : "null")}, Rules: Public read/write confirmed");
-        Debug.Log($"Firebase App Name: {Firebase.FirebaseApp.DefaultInstance.Name}, Database URL: {AnalyticsManager.Instance.Database.RootReference.ToString()}");
-
         saveButton.onClick.AddListener(() => SaveGameState());
         loadButton.onClick.AddListener(() => LoadGameState(matchIdInput.text));
     }
 
+    // Wait for Firebase to initialize
     private async Task WaitForFirebaseInitialization()
     {
         while (!AnalyticsManager.Instance.IsInitialized)
         {
             await Task.Delay(100);
         }
-        Debug.Log("Firebase initialization confirmed.");
     }
 
+    // Save current game state to Firebase
     public void SaveGameState()
     {
         if (!NetworkManager.Singleton.IsServer || dbReference == null)
-        {
-            Debug.LogWarning("Cannot save: Not server or dbReference is null.");
             return;
-        }
 
         if (!Application.internetReachability.Equals(NetworkReachability.ReachableViaLocalAreaNetwork) && 
             !Application.internetReachability.Equals(NetworkReachability.ReachableViaCarrierDataNetwork))
@@ -59,51 +56,30 @@ public class GameStateManager : NetworkBehaviour
             Debug.LogError("No internet connection detected! Cannot save to Firebase.");
             return;
         }
-        Debug.Log("Internet connection detected.");
 
         string fen = GameManager.Instance.SerializeGame();
         string matchId = System.Guid.NewGuid().ToString();
         string jsonData = JsonUtility.ToJson(new GameStateData { FEN = fen });
-        Debug.Log($"Attempting to save - MatchID: {matchId}, JSON: {jsonData}");
 
         dbReference.Child(matchId).SetRawJsonValueAsync(jsonData)
             .ContinueWithOnMainThread(task =>
             {
                 if (task.IsCompletedSuccessfully)
                 {
-                    Debug.Log($"Game state saved - MatchID: {matchId}, FEN: {fen}");
                     SyncGameStateClientRpc(matchId, fen);
                 }
                 else
                 {
-                    string errorMessage = "Failed to save game state: ";
-                    if (task.Exception != null)
-                    {
-                        errorMessage += task.Exception.ToString();
-                        if (task.Exception.InnerExceptions.Count > 0)
-                        {
-                            foreach (var inner in task.Exception.InnerExceptions)
-                            {
-                                errorMessage += $"\nInner Exception: {inner.Message}";
-                            }
-                        }
-                    }
-                    else
-                    {
-                        errorMessage += "No further details available.";
-                    }
-                    Debug.LogError(errorMessage);
+                    Debug.LogError("Failed to save game state: " + task.Exception?.ToString());
                 }
             });
     }
 
+    // Load game state from Firebase
     public void LoadGameState(string matchId)
     {
         if (!NetworkManager.Singleton.IsServer || dbReference == null)
-        {
-            Debug.LogWarning("Cannot load: Not server or dbReference is null.");
             return;
-        }
 
         if (string.IsNullOrEmpty(matchId))
         {
@@ -119,41 +95,25 @@ public class GameStateManager : NetworkBehaviour
                 GameStateData data = JsonUtility.FromJson<GameStateData>(json);
                 GameManager.Instance.LoadGame(data.FEN);
                 SyncBoardClientRpc(data.FEN);
-                Debug.Log($"Game state loaded - MatchID: {matchId}, FEN: {data.FEN}");
             }
             else
             {
-                string errorMessage = "Failed to load game state: ";
-                if (task.Exception != null)
-                {
-                    errorMessage += task.Exception.ToString();
-                    if (task.Exception.InnerExceptions.Count > 0)
-                    {
-                        foreach (var inner in task.Exception.InnerExceptions)
-                        {
-                            errorMessage += $"\nInner Exception: {inner.Message}";
-                        }
-                    }
-                }
-                else
-                {
-                    errorMessage += "No further details available.";
-                }
-                Debug.LogError(errorMessage);
+                Debug.LogError("Failed to load game state: " + task.Exception?.ToString());
             }
         });
     }
 
+    // Sync game state to clients
     [ClientRpc]
     private void SyncGameStateClientRpc(string matchId, string fen)
     {
         if (!IsServer)
         {
             GameManager.Instance.LoadGame(fen);
-            Debug.Log($"Client synced game state - MatchID: {matchId}");
         }
     }
 
+    // Sync board state to clients
     [ClientRpc]
     private void SyncBoardClientRpc(string fen)
     {
