@@ -9,15 +9,21 @@ public class AnalyticsManager : MonoBehaviour
     public static AnalyticsManager Instance { get; private set; }
     public FirebaseDatabase Database { get; private set; }
     private bool isFirebaseInitialized = false;
+    public bool IsInitialized => isFirebaseInitialized;
 
     // Set up singleton and start Firebase initialization
     private void Awake()
     {
-        if (Instance == null) Instance = this;
-        else Destroy(gameObject);
-
-        DontDestroyOnLoad(gameObject);
-        InitializeFirebase();
+        if (Instance == null) 
+        {
+            Instance = this;
+            DontDestroyOnLoad(gameObject);
+            InitializeFirebase();
+        }
+        else 
+        {
+            Destroy(gameObject);
+        }
     }
 
     // Initialize Firebase services
@@ -36,6 +42,4 @@ public class AnalyticsManager : MonoBehaviour
             Debug.LogError("Could not resolve Firebase dependencies: " + dependencyStatus);
         }
     }
-
-    public bool IsInitialized => isFirebaseInitialized;
 }

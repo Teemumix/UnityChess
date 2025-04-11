@@ -3,6 +3,7 @@ using Firebase.Storage;
 using System.IO;
 using System.Threading.Tasks;
 using Firebase.Extensions;
+using System.Collections;
 
 public class SkinLoader : MonoBehaviour
 {
@@ -11,24 +12,31 @@ public class SkinLoader : MonoBehaviour
     private FirebaseStorage storage;
     public bool isInitialized = false;
 
-    // Set up singleton and initialize Firebase Storage
+    // Set up singleton and wait for Firebase initialization
     private void Awake()
     {
-        if (Instance == null) Instance = this;
-        else Destroy(gameObject);
-
-        Firebase.FirebaseApp.CheckAndFixDependenciesAsync().ContinueWithOnMainThread(task =>
+        if (Instance == null) 
         {
-            if (task.IsCompletedSuccessfully && task.Result == Firebase.DependencyStatus.Available)
-            {
-                storage = FirebaseStorage.DefaultInstance;
-                isInitialized = true;
-            }
-            else
-            {
-                Debug.LogError("Failed to initialize Firebase: " + task.Exception?.Message);
-            }
-        });
+            Instance = this;
+        }
+        else 
+        {
+            Destroy(gameObject);
+        }
+    }
+
+    // Start coroutine to initialize after AnalyticsManager
+    private void Start()
+    {
+        StartCoroutine(InitializeAfterFirebase());
+    }
+
+    // Wait for Firebase to initialize then set up storage
+    private IEnumerator InitializeAfterFirebase()
+    {
+        yield return new WaitUntil(() => AnalyticsManager.Instance != null && AnalyticsManager.Instance.IsInitialized);
+        storage = FirebaseStorage.DefaultInstance;
+        isInitialized = true;
     }
 
     // Load skin from Firebase or local storage
