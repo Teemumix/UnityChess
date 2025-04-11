@@ -3,7 +3,7 @@ using UnityEngine.UI;
 using Unity.Netcode;
 using Firebase.Database;
 using System.Threading.Tasks;
-using Firebase.Extensions; // Explicitly add this for ContinueWithOnMainThread
+using Firebase.Extensions;
 
 public class GameStateManager : NetworkBehaviour
 {
@@ -22,7 +22,6 @@ public class GameStateManager : NetworkBehaviour
 
     private async void Start()
     {
-        // Wait for Firebase initialization
         if (AnalyticsManager.Instance == null)
         {
             Debug.LogError("AnalyticsManager.Instance is null!");
@@ -30,7 +29,8 @@ public class GameStateManager : NetworkBehaviour
         }
         await WaitForFirebaseInitialization();
         dbReference = AnalyticsManager.Instance.Database.RootReference.Child("gameStates");
-        Debug.Log("GameStateManager initialized with dbReference: " + (dbReference != null));
+        Debug.Log($"GameStateManager initialized - dbReference: {(dbReference != null ? dbReference.ToString() : "null")}, Rules: Public read/write confirmed");
+        Debug.Log($"Firebase App Name: {Firebase.FirebaseApp.DefaultInstance.Name}, Database URL: {AnalyticsManager.Instance.Database.RootReference.ToString()}");
 
         saveButton.onClick.AddListener(() => SaveGameState());
         loadButton.onClick.AddListener(() => LoadGameState(matchIdInput.text));
@@ -40,7 +40,7 @@ public class GameStateManager : NetworkBehaviour
     {
         while (!AnalyticsManager.Instance.IsInitialized)
         {
-            await Task.Delay(100); // Wait 100ms before checking again
+            await Task.Delay(100);
         }
         Debug.Log("Firebase initialization confirmed.");
     }
@@ -53,11 +53,21 @@ public class GameStateManager : NetworkBehaviour
             return;
         }
 
+        if (!Application.internetReachability.Equals(NetworkReachability.ReachableViaLocalAreaNetwork) && 
+            !Application.internetReachability.Equals(NetworkReachability.ReachableViaCarrierDataNetwork))
+        {
+            Debug.LogError("No internet connection detected! Cannot save to Firebase.");
+            return;
+        }
+        Debug.Log("Internet connection detected.");
+
         string fen = GameManager.Instance.SerializeGame();
         string matchId = System.Guid.NewGuid().ToString();
         string jsonData = JsonUtility.ToJson(new GameStateData { FEN = fen });
+        Debug.Log($"Attempting to save - MatchID: {matchId}, JSON: {jsonData}");
+
         dbReference.Child(matchId).SetRawJsonValueAsync(jsonData)
-            .ContinueWithOnMainThread(task => // Explicitly use Firebase.Extensions
+            .ContinueWithOnMainThread(task =>
             {
                 if (task.IsCompletedSuccessfully)
                 {
@@ -66,7 +76,23 @@ public class GameStateManager : NetworkBehaviour
                 }
                 else
                 {
-                    Debug.LogError("Failed to save game state: " + task.Exception?.Message);
+                    string errorMessage = "Failed to save game state: ";
+                    if (task.Exception != null)
+                    {
+                        errorMessage += task.Exception.ToString();
+                        if (task.Exception.InnerExceptions.Count > 0)
+                        {
+                            foreach (var inner in task.Exception.InnerExceptions)
+                            {
+                                errorMessage += $"\nInner Exception: {inner.Message}";
+                            }
+                        }
+                    }
+                    else
+                    {
+                        errorMessage += "No further details available.";
+                    }
+                    Debug.LogError(errorMessage);
                 }
             });
     }
@@ -97,7 +123,23 @@ public class GameStateManager : NetworkBehaviour
             }
             else
             {
-                Debug.LogError("Failed to load game state: " + task.Exception?.Message);
+                string errorMessage = "Failed to load game state: ";
+                if (task.Exception != null)
+                {
+                    errorMessage += task.Exception.ToString();
+                    if (task.Exception.InnerExceptions.Count > 0)
+                    {
+                        foreach (var inner in task.Exception.InnerExceptions)
+                        {
+                            errorMessage += $"\nInner Exception: {inner.Message}";
+                        }
+                    }
+                }
+                else
+                {
+                    errorMessage += "No further details available.";
+                }
+                Debug.LogError(errorMessage);
             }
         });
     }

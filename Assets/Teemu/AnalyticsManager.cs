@@ -22,14 +22,16 @@ public class AnalyticsManager : MonoBehaviour
 
     private async void InitializeFirebase()
     {
+        Debug.Log("Starting Firebase initialization...");
         var dependencyStatus = await FirebaseApp.CheckAndFixDependenciesAsync();
         if (dependencyStatus == DependencyStatus.Available)
         {
             FirebaseApp app = FirebaseApp.DefaultInstance;
-            Database = FirebaseDatabase.DefaultInstance;
+            // Explicitly set the database URL from google-services.json
+            Database = FirebaseDatabase.GetInstance(app, "https://cg63a-a36dc-default-rtdb.firebaseio.com/");
             FirebaseAnalytics.SetAnalyticsCollectionEnabled(true);
             isFirebaseInitialized = true;
-            Debug.Log("Firebase initialized successfully.");
+            Debug.Log($"Firebase initialized successfully. App: {app.Name}, Database URL: {Database.RootReference.ToString()}");
         }
         else
         {
