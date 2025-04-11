@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using Unity.Netcode;
 using Firebase.Database;
 using System.Threading.Tasks;
+using Firebase.Extensions; // Explicitly add this for ContinueWithOnMainThread
 
 public class GameStateManager : NetworkBehaviour
 {
@@ -19,29 +20,48 @@ public class GameStateManager : NetworkBehaviour
         else Destroy(gameObject);
     }
 
-    private void Start()
+    private async void Start()
     {
-        if (AnalyticsManager.Instance != null && AnalyticsManager.Instance.IsInitialized)
+        // Wait for Firebase initialization
+        if (AnalyticsManager.Instance == null)
         {
-            dbReference = AnalyticsManager.Instance.Database.RootReference.Child("gameStates");
+            Debug.LogError("AnalyticsManager.Instance is null!");
+            return;
         }
+        await WaitForFirebaseInitialization();
+        dbReference = AnalyticsManager.Instance.Database.RootReference.Child("gameStates");
+        Debug.Log("GameStateManager initialized with dbReference: " + (dbReference != null));
 
-        saveButton.onClick.AddListener(() => GameStateManager.Instance.SaveGameState());
-        loadButton.onClick.AddListener(() => GameStateManager.Instance.LoadGameState(matchIdInput.text));
+        saveButton.onClick.AddListener(() => SaveGameState());
+        loadButton.onClick.AddListener(() => LoadGameState(matchIdInput.text));
+    }
+
+    private async Task WaitForFirebaseInitialization()
+    {
+        while (!AnalyticsManager.Instance.IsInitialized)
+        {
+            await Task.Delay(100); // Wait 100ms before checking again
+        }
+        Debug.Log("Firebase initialization confirmed.");
     }
 
     public void SaveGameState()
     {
-        if (!NetworkManager.Singleton.IsServer || dbReference == null) return;
+        if (!NetworkManager.Singleton.IsServer || dbReference == null)
+        {
+            Debug.LogWarning("Cannot save: Not server or dbReference is null.");
+            return;
+        }
 
         string fen = GameManager.Instance.SerializeGame();
         string matchId = System.Guid.NewGuid().ToString();
-        dbReference.Child(matchId).SetRawJsonValueAsync(JsonUtility.ToJson(new GameStateData { FEN = fen }))
-            .ContinueWith(task =>
+        string jsonData = JsonUtility.ToJson(new GameStateData { FEN = fen });
+        dbReference.Child(matchId).SetRawJsonValueAsync(jsonData)
+            .ContinueWithOnMainThread(task => // Explicitly use Firebase.Extensions
             {
                 if (task.IsCompletedSuccessfully)
                 {
-                    Debug.Log($"Game state saved - MatchID: {matchId}");
+                    Debug.Log($"Game state saved - MatchID: {matchId}, FEN: {fen}");
                     SyncGameStateClientRpc(matchId, fen);
                 }
                 else
@@ -53,9 +73,19 @@ public class GameStateManager : NetworkBehaviour
 
     public void LoadGameState(string matchId)
     {
-        if (!NetworkManager.Singleton.IsServer || dbReference == null) return;
+        if (!NetworkManager.Singleton.IsServer || dbReference == null)
+        {
+            Debug.LogWarning("Cannot load: Not server or dbReference is null.");
+            return;
+        }
 
-        dbReference.Child(matchId).GetValueAsync().ContinueWith(task =>
+        if (string.IsNullOrEmpty(matchId))
+        {
+            Debug.LogError("MatchID is empty!");
+            return;
+        }
+
+        dbReference.Child(matchId).GetValueAsync().ContinueWithOnMainThread(task =>
         {
             if (task.IsCompletedSuccessfully && task.Result != null)
             {
@@ -63,7 +93,7 @@ public class GameStateManager : NetworkBehaviour
                 GameStateData data = JsonUtility.FromJson<GameStateData>(json);
                 GameManager.Instance.LoadGame(data.FEN);
                 SyncBoardClientRpc(data.FEN);
-                Debug.Log($"Game state loaded - MatchID: {matchId}");
+                Debug.Log($"Game state loaded - MatchID: {matchId}, FEN: {data.FEN}");
             }
             else
             {
@@ -85,7 +115,7 @@ public class GameStateManager : NetworkBehaviour
     [ClientRpc]
     private void SyncBoardClientRpc(string fen)
     {
-        NetworkGameController.Instance.SyncBoardClientRpc(fen); // Reuse existing sync method
+        NetworkGameController.Instance.SyncBoardClientRpc(fen);
     }
 }
 
